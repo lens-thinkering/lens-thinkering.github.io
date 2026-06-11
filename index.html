@@ -67,7 +67,7 @@
     text-align: right;
     padding: 24px 24px 0 0;
     font-weight: 900;
-    font-size: clamp(64px, 8vw, 108px);
+    font-size: clamp(48px, 5vw, 72px); /* capped so LANDON fits the 340px column */
     line-height: 0.88;
     letter-spacing: -0.02em;
     text-transform: uppercase;
@@ -303,9 +303,10 @@
     [188,84],[198,89],[207,95],[213,101],[217,108],[219,118],[220,130],[221,142],
     [222,154],[222,164],[221,172],[219,180],
     // inner edge: up the right sideburn, across the hairline, down the left sideburn
+    // (dips lower on the left to cover the light-blond fringe at the temple)
     [205,180],[203,165],[201,150],[198,133],[194,124],[189,118],[184,114],[178,111],
-    [170,109],[160,108],[150,108],[141,107],[134,109],[127,113],[122,118],[117,124],
-    [113,129],[110,140],[108,155],[106,166],[105,174]
+    [170,109],[160,108],[150,108],[142,109],[138,112],[132,118],[126,126],[120,133],
+    [115,138],[112,148],[110,158],[108,166],[106,174]
   ];
   var shaveMask = new Path2D();
   shaveMask.moveTo(hairOutline[0][0], hairOutline[0][1]);
@@ -313,7 +314,7 @@
     shaveMask.lineTo(hairOutline[hp][0], hairOutline[hp][1]);
   }
   shaveMask.closePath();
-  shaveMask.ellipse(161, 206, 17, 9, 0, 0, Math.PI * 2);    // mustache
+  shaveMask.ellipse(161, 206, 22, 9, 0, 0, Math.PI * 2);    // mustache
 
   // total shaveable pixel count, measured once for the shine threshold
   var maskArea = (function () {
