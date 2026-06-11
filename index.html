@@ -178,6 +178,60 @@
     height: 1px;
     pointer-events: none;
   }
+
+  /* ── touch devices: bigger handles, always visible (no hover) ── */
+  @media (pointer: coarse) {
+    .handle { opacity: 0.6; }
+    .rotate-handle { width: 18px; height: 18px; top: -32px; left: calc(50% - 9px); }
+    .resize-handle { width: 16px; height: 16px; right: -4px; bottom: -4px; }
+  }
+
+  /* ── short desktop windows: allow scroll instead of crushing the layout ── */
+  @media (min-width: 901px) and (max-height: 660px) {
+    html, body { overflow-y: auto; }
+    .shell { min-height: 660px; }
+  }
+
+  /* ── stacked layout for tablets and phones ── */
+  @media (max-width: 900px) {
+    html, body { overflow-y: auto; overflow-x: hidden; }
+
+    .shell {
+      display: block;
+      height: auto;
+    }
+    .nav {
+      border-right: none;
+      border-bottom: 1px solid #000;
+      padding: 16px 16px 12px 16px;
+    }
+    .nav li { display: inline-block; margin-right: 16px; line-height: 2.2; }
+    .nav li.active::before { content: "\2192 "; }
+
+    .content { padding: 24px 16px; min-height: 90px; }
+
+    .right {
+      border-left: none;
+      border-top: 1px solid #000;
+      position: static;
+    }
+    .name { padding: 16px 16px 0 0; }
+
+    .photo-area {
+      position: static;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .clipper-hint {
+      top: auto;
+      bottom: 16px;
+      left: 16px;
+    }
+    .clipper-container { top: 190px; } /* clear of the nav rows */
+  }
 </style>
 </head>
 <body>
@@ -419,7 +473,7 @@
   function dismissHint() {
     if (hint) { hint.classList.add('hidden'); hint = null; }
   }
-  clipper.addEventListener('mousedown', dismissHint);
+  clipper.addEventListener('pointerdown', dismissHint);
   clipper.addEventListener('wheel', dismissHint);
 
   function applyTransform() {
@@ -473,7 +527,7 @@
   /* ── translate (drag) ── */
   var drag = null; // { mode: 'move'|'rotate'|'scale', ... }
 
-  clipper.addEventListener('mousedown', function (e) {
+  clipper.addEventListener('pointerdown', function (e) {
     if (e.target === rotateHandle || e.target === resizeHandle) return;
     e.preventDefault();
     drag = { mode: 'move', startX: e.clientX, startY: e.clientY, baseX: t.x, baseY: t.y };
@@ -481,7 +535,7 @@
     prevTeeth = null;
   });
 
-  rotateHandle.addEventListener('mousedown', function (e) {
+  rotateHandle.addEventListener('pointerdown', function (e) {
     e.preventDefault();
     e.stopPropagation();
     var c = clipperCenter();
@@ -490,7 +544,7 @@
     clipper.classList.add('show-handles');
   });
 
-  resizeHandle.addEventListener('mousedown', function (e) {
+  resizeHandle.addEventListener('pointerdown', function (e) {
     e.preventDefault();
     e.stopPropagation();
     var c = clipperCenter();
@@ -499,7 +553,7 @@
     clipper.classList.add('show-handles');
   });
 
-  document.addEventListener('mousemove', function (e) {
+  document.addEventListener('pointermove', function (e) {
     if (!drag) return;
     if (drag.mode === 'move') {
       t.x = drag.baseX + (e.clientX - drag.startX);
@@ -517,13 +571,15 @@
     }
   });
 
-  document.addEventListener('mouseup', function () {
+  function endDrag() {
     if (!drag) return;
     drag = null;
     clipper.classList.remove('dragging', 'show-handles');
     setBuzzing(false);
     prevTeeth = null;
-  });
+  }
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
 
   /* ── scroll to resize ── */
   clipper.addEventListener('wheel', function (e) {
