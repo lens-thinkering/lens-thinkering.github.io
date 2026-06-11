@@ -1,0 +1,539 @@
+<!--
+  To run: serve this directory with a local HTTP server.
+  Example: python3 -m http.server 8000
+  Then open http://localhost:8000 in your browser.
+  Opening index.html directly (file://) will block image loading.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Landon McNeil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #ffffff;
+    color: #000000;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 180px 1fr 340px;
+    height: 100vh;
+  }
+
+  /* ── Left nav ── */
+  .nav {
+    border-right: 1px solid #000;
+    padding: 24px 0 0 24px;
+  }
+  .nav ul { list-style: none; }
+  .nav li {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 2;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .nav li:hover { text-decoration: underline; }
+  .nav li.active::before { content: "\2192 "; }
+
+  /* ── Center content ── */
+  .content {
+    padding: 32px;
+    overflow: hidden;
+  }
+  #contentInner {
+    transition: opacity 100ms linear;
+    font-family: ui-monospace, 'Courier New', monospace;
+    font-size: 14px;
+  }
+  #contentInner.fade-in { transition: opacity 150ms linear; }
+
+  /* ── Right column ── */
+  .right {
+    border-left: 1px solid #000;
+    position: relative;
+  }
+  .name {
+    text-align: right;
+    padding: 24px 24px 0 0;
+    font-weight: 900;
+    font-size: clamp(64px, 8vw, 108px);
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .photo-area {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+  .reset-link {
+    display: block;
+    text-align: right;
+    font-size: 12px;
+    color: #000;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-bottom: 4px;
+    padding-right: 4px;
+  }
+  .photo-wrapper {
+    position: relative;
+    width: 280px;
+    height: 447px;
+  }
+  .photo-wrapper canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  /* ── Clipper ── */
+  .clipper-container {
+    position: fixed;
+    z-index: 9999;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    top: 80px;
+    left: calc(50vw - 30px);
+    width: 60px;
+    height: 150px;
+    transform-origin: center center;
+    touch-action: none;
+  }
+  .clipper-container.dragging { cursor: grabbing; }
+
+  .handle {
+    position: absolute;
+    opacity: 0.35;
+    transition: opacity 120ms linear;
+    z-index: 2;
+  }
+  .clipper-container:hover .handle,
+  .clipper-container.show-handles .handle { opacity: 1; }
+
+  .rotate-handle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #000;
+    border: 1px solid #fff;
+    top: -22px;
+    left: calc(50% - 5px);
+    cursor: alias; /* closest standard cursor to a curved rotation arrow */
+  }
+  .resize-handle {
+    width: 8px;
+    height: 8px;
+    background: #000;
+    right: 0;
+    bottom: 0;
+    cursor: nwse-resize;
+  }
+
+  .clipper-container svg { display: block; pointer-events: none; }
+  .clipper-container svg.buzzing { animation: buzz 0.08s steps(1) infinite; }
+  @keyframes buzz {
+    0%   { transform: translate(0, 0); }
+    25%  { transform: translate(1.5px, 1px); }
+    50%  { transform: translate(-1px, 0); }
+    75%  { transform: translate(0.5px, -1px); }
+    100% { transform: translate(0, 0); }
+  }
+
+  .clipper-hint {
+    position: fixed;
+    z-index: 9998;
+    top: 250px;
+    left: calc(50vw - 90px);
+    width: 200px;
+    border: 1px solid #000;
+    background: #fff;
+    padding: 8px 10px;
+    font-family: ui-monospace, 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    transition: opacity 300ms linear;
+    pointer-events: none;
+  }
+  .clipper-hint.hidden { opacity: 0; }
+
+  .teeth-marker {
+    position: absolute;
+    left: 50%;
+    bottom: 30px; /* teeth row sits above the trailing cord space */
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <nav class="nav">
+    <ul id="navList">
+      <li class="active" data-tab="Home">Home</li>
+      <li data-tab="About Me">About Me</li>
+      <li data-tab="Resume">Resume</li>
+      <li data-tab="Lucid Motors">Lucid Motors</li>
+      <li data-tab="BYU Racing FSAE">BYU Racing FSAE</li>
+      <li data-tab="SO-101">SO-101</li>
+      <li data-tab="B&amp;K PSU MCP">B&amp;K PSU MCP</li>
+      <li data-tab="ElectroPuch">ElectroPuch</li>
+    </ul>
+  </nav>
+
+  <main class="content">
+    <div id="contentInner">[ Welcome ]</div>
+  </main>
+
+  <aside class="right">
+    <div class="name">Landon<br>McNeil</div>
+    <div class="photo-area">
+      <span class="reset-link" id="resetLink">&#8634; reset</span>
+      <div class="photo-wrapper" id="photoWrapper">
+        <canvas id="photoCanvas" width="280" height="447"></canvas>
+        <canvas id="shaveCanvas" width="280" height="447"></canvas>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- ── Clipper ── -->
+<div class="clipper-hint" id="clipperHint">&#8593; drag the clippers onto the hair to shave<br>&#8226; scroll to resize<br>&#8226; circle handle rotates, square resizes</div>
+<div class="clipper-container" id="clipper">
+  <div class="handle rotate-handle" id="rotateHandle"></div>
+  <div class="handle resize-handle" id="resizeHandle"></div>
+  <div class="teeth-marker" id="teethMarker"></div>
+  <svg id="clipperSvg" width="60" height="150" viewBox="0 0 60 150" xmlns="http://www.w3.org/2000/svg">
+    <!-- power cord trailing from the bottom end, curving out behind the teeth -->
+    <path d="M 16 104 C 4 114, 14 132, 8 148" stroke="#333" stroke-width="3" fill="none"/>
+    <!-- body (slight 3/4 taper, rounded top) -->
+    <path d="M 14 12 Q 14 4 22 4 L 38 4 Q 46 4 46 12 L 44 102 Q 44 108 38 108 L 22 108 Q 16 108 16 102 Z" fill="#1a1a1a"/>
+    <!-- highlight strip along top edge -->
+    <path d="M 16 7 Q 18 5 22 5 L 38 5 Q 42 5 44 7 L 44 9 Q 42 6.5 38 6.5 L 22 6.5 Q 18 6.5 16 9 Z" fill="#3d3d3d"/>
+    <!-- face panel -->
+    <rect x="22" y="18" width="18" height="56" fill="#2e2e2e"/>
+    <!-- power button -->
+    <circle cx="31" cy="32" r="4" fill="#555"/>
+    <!-- side grip lines -->
+    <rect x="24" y="54" width="14" height="2" fill="#1f1f1f"/>
+    <rect x="24" y="60" width="14" height="2" fill="#1f1f1f"/>
+    <rect x="24" y="66" width="14" height="2" fill="#1f1f1f"/>
+    <!-- blade housing at the bottom (business end) -->
+    <rect x="16" y="106" width="28" height="6" fill="#2a2a2a"/>
+    <!-- clipper teeth: row of 8 thin rects, 4px wide x 8px tall, facing down -->
+    <rect x="12" y="112" width="4" height="8" fill="#4a4a4a"/>
+    <rect x="17" y="112" width="4" height="8" fill="#4a4a4a"/>
+    <rect x="22" y="112" width="4" height="8" fill="#4a4a4a"/>
+    <rect x="27" y="112" width="4" height="8" fill="#4a4a4a"/>
+    <rect x="32" y="112" width="4" height="8" fill="#4a4a4a"/>
+    <rect x="37" y="112" width="4" height="8" fill="#4a4a4a"/>
+    <rect x="42" y="112" width="4" height="8" fill="#4a4a4a"/>
+    <rect x="47" y="112" width="4" height="8" fill="#4a4a4a"/>
+  </svg>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ════════ TAB NAVIGATION ════════ */
+  var navList = document.getElementById('navList');
+  var contentInner = document.getElementById('contentInner');
+
+  navList.addEventListener('click', function (e) {
+    var li = e.target.closest('li');
+    if (!li || li.classList.contains('active')) return;
+
+    navList.querySelectorAll('li').forEach(function (n) { n.classList.remove('active'); });
+    li.classList.add('active');
+
+    var tab = li.dataset.tab;
+    contentInner.classList.remove('fade-in');
+    contentInner.style.opacity = '0';
+    setTimeout(function () {
+      contentInner.textContent = tab === 'Home'
+        ? '[ Welcome ]'
+        : '[ ' + tab + ' — content coming soon ]';
+      contentInner.classList.add('fade-in');
+      contentInner.style.opacity = '1';
+    }, 100);
+  });
+
+  /* ════════ PHOTO CANVASES ════════ */
+  var photoCanvas = document.getElementById('photoCanvas');
+  var shaveCanvas = document.getElementById('shaveCanvas');
+  var photoCtx = photoCanvas.getContext('2d');
+  var shaveCtx = shaveCanvas.getContext('2d');
+  var photoWrapper = document.getElementById('photoWrapper');
+
+  var img = new Image();
+  img.onload = function () {
+    photoCtx.drawImage(img, 0, 0, photoCanvas.width, photoCanvas.height);
+  };
+  img.onerror = function () {
+    photoCtx.font = '12px monospace';
+    photoCtx.fillText('[ photo failed to load — serve via http ]', 8, 24);
+  };
+  img.src = 'me_with_hair-removebg.png';
+
+  /* ── shaveable mask: hair and mustache only ──
+     Hair polygon traced from the photo in 280x447 canvas space:
+     outer edge follows the head silhouette, inner edge follows the hairline. */
+  var hairOutline = [
+    // outer edge: up the left side, over the crown, down the right side
+    [96,174],[95,160],[95,140],[96,128],[98,116],[101,106],[105,98],[110,90],
+    [116,84],[124,79],[133,75],[143,72],[153,71],[163,72],[172,75],[180,79],
+    [188,84],[198,89],[207,95],[213,101],[217,108],[219,118],[220,130],[221,142],
+    [222,154],[222,164],[221,172],[219,180],
+    // inner edge: up the right sideburn, across the hairline, down the left sideburn
+    [205,180],[203,165],[201,150],[198,133],[194,124],[189,118],[184,114],[178,111],
+    [170,109],[160,108],[150,108],[141,107],[134,109],[127,113],[122,118],[117,124],
+    [113,129],[110,140],[108,155],[106,166],[105,174]
+  ];
+  var shaveMask = new Path2D();
+  shaveMask.moveTo(hairOutline[0][0], hairOutline[0][1]);
+  for (var hp = 1; hp < hairOutline.length; hp++) {
+    shaveMask.lineTo(hairOutline[hp][0], hairOutline[hp][1]);
+  }
+  shaveMask.closePath();
+  shaveMask.ellipse(161, 206, 17, 9, 0, 0, Math.PI * 2);    // mustache
+
+  // total shaveable pixel count, measured once for the shine threshold
+  var maskArea = (function () {
+    var m = document.createElement('canvas');
+    m.width = shaveCanvas.width; m.height = shaveCanvas.height;
+    var mc = m.getContext('2d');
+    mc.fill(shaveMask);
+    var d = mc.getImageData(0, 0, m.width, m.height).data;
+    var n = 0;
+    for (var i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+    return n;
+  })();
+
+  /* ── shine state ── */
+  var shineDrawn = false;
+  var strokesSinceCheck = 0;
+
+  function drawShine() {
+    var g = shaveCtx.createRadialGradient(0, 0, 0, 0, 0, 42);
+    g.addColorStop(0, 'rgba(255,255,255,0.58)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    shaveCtx.save();
+    shaveCtx.clip(shaveMask);
+    shaveCtx.globalCompositeOperation = 'source-over';
+    shaveCtx.translate(160, 90);
+    shaveCtx.scale(1, 30 / 42);
+    shaveCtx.beginPath();
+    shaveCtx.arc(0, 0, 42, 0, Math.PI * 2);
+    shaveCtx.fillStyle = g;
+    shaveCtx.fill();
+    shaveCtx.restore();
+    shineDrawn = true;
+  }
+
+  function maybeTriggerShine() {
+    if (shineDrawn) return;
+    strokesSinceCheck++;
+    if (strokesSinceCheck < 15) return;
+    strokesSinceCheck = 0;
+    var data = shaveCtx.getImageData(0, 0, shaveCanvas.width, shaveCanvas.height).data;
+    var painted = 0;
+    for (var i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) painted++;
+    }
+    // shine once most of the shaveable area is buzzed
+    if (painted / maskArea > 0.55) drawShine();
+  }
+
+  function resetShave() {
+    shaveCtx.clearRect(0, 0, shaveCanvas.width, shaveCanvas.height);
+    shineDrawn = false;
+    strokesSinceCheck = 0;
+  }
+
+  document.getElementById('resetLink').addEventListener('click', resetShave);
+  photoWrapper.addEventListener('dblclick', resetShave);
+
+  /* ── shave stroke (WarioWare-style: skin base + stubble) ── */
+  function shaveStamp(cx, cy, scale) {
+    var r = 10 * scale;
+
+    shaveCtx.save();
+    shaveCtx.clip(shaveMask); // strokes only land on hair / mustache
+
+    // PASS 1 — skin base
+    var jx = (Math.random() - 0.5) * 4;
+    var jy = (Math.random() - 0.5) * 4;
+    shaveCtx.globalCompositeOperation = 'source-over';
+    shaveCtx.beginPath();
+    shaveCtx.arc(cx + jx, cy + jy, r, 0, Math.PI * 2);
+    shaveCtx.fillStyle = '#F0C27F';
+    shaveCtx.fill();
+
+    // PASS 2 — stubble dots
+    var dots = 12 + Math.floor(Math.random() * 5);
+    shaveCtx.fillStyle = 'rgba(74, 55, 40, 0.45)';
+    for (var i = 0; i < dots; i++) {
+      var ang = Math.random() * Math.PI * 2;
+      var dist = Math.sqrt(Math.random()) * r;
+      var dr = 0.8 + Math.random() * 1.2;
+      shaveCtx.beginPath();
+      shaveCtx.arc(cx + Math.cos(ang) * dist, cy + Math.sin(ang) * dist, dr, 0, Math.PI * 2);
+      shaveCtx.fill();
+    }
+    shaveCtx.restore();
+
+    // PASS 3 — crown shine (lazy, fires once)
+    maybeTriggerShine();
+  }
+
+  /* ════════ CLIPPER ════════ */
+  var clipper = document.getElementById('clipper');
+  var clipperSvg = document.getElementById('clipperSvg');
+  var rotateHandle = document.getElementById('rotateHandle');
+  var resizeHandle = document.getElementById('resizeHandle');
+  var teethMarker = document.getElementById('teethMarker');
+
+  var t = { x: 0, y: 0, angleDeg: 0, scale: 1 };
+
+  /* hint disappears after the first interaction with the clipper */
+  var hint = document.getElementById('clipperHint');
+  function dismissHint() {
+    if (hint) { hint.classList.add('hidden'); hint = null; }
+  }
+  clipper.addEventListener('mousedown', dismissHint);
+  clipper.addEventListener('wheel', dismissHint);
+
+  function applyTransform() {
+    clipper.style.transform =
+      'translate(' + t.x + 'px, ' + t.y + 'px) rotate(' + t.angleDeg + 'deg) scale(' + t.scale + ')';
+  }
+
+  function clipperCenter() {
+    var r = clipper.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  /* ── teeth contact point (transform-aware via marker element) ── */
+  function teethPoint() {
+    var r = teethMarker.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  var prevTeeth = null;
+
+  function setBuzzing(on) {
+    clipperSvg.classList.toggle('buzzing', on);
+  }
+
+  function tryShave() {
+    var pt = teethPoint();
+    var wrap = photoWrapper.getBoundingClientRect();
+    var inside = pt.x >= wrap.left && pt.x <= wrap.right &&
+                 pt.y >= wrap.top && pt.y <= wrap.bottom;
+    setBuzzing(inside);
+    if (!inside) { prevTeeth = null; return; }
+
+    // canvas pixel coords (canvas size === css size here)
+    var cx = pt.x - wrap.left;
+    var cy = pt.y - wrap.top;
+
+    // interpolate from previous point so fast drags leave no gaps
+    if (prevTeeth) {
+      var dx = cx - prevTeeth.x, dy = cy - prevTeeth.y;
+      var dist = Math.hypot(dx, dy);
+      var steps = Math.max(1, Math.floor(dist / 6));
+      for (var i = 1; i <= steps; i++) {
+        shaveStamp(prevTeeth.x + dx * i / steps, prevTeeth.y + dy * i / steps, t.scale);
+      }
+    } else {
+      shaveStamp(cx, cy, t.scale);
+    }
+    prevTeeth = { x: cx, y: cy };
+  }
+
+  /* ── translate (drag) ── */
+  var drag = null; // { mode: 'move'|'rotate'|'scale', ... }
+
+  clipper.addEventListener('mousedown', function (e) {
+    if (e.target === rotateHandle || e.target === resizeHandle) return;
+    e.preventDefault();
+    drag = { mode: 'move', startX: e.clientX, startY: e.clientY, baseX: t.x, baseY: t.y };
+    clipper.classList.add('dragging');
+    prevTeeth = null;
+  });
+
+  rotateHandle.addEventListener('mousedown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var c = clipperCenter();
+    var startAngle = Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180 / Math.PI;
+    drag = { mode: 'rotate', center: c, startAngle: startAngle, baseAngle: t.angleDeg };
+    clipper.classList.add('show-handles');
+  });
+
+  resizeHandle.addEventListener('mousedown', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var c = clipperCenter();
+    var startDist = Math.hypot(e.clientX - c.x, e.clientY - c.y);
+    drag = { mode: 'scale', center: c, startDist: Math.max(startDist, 1), baseScale: t.scale };
+    clipper.classList.add('show-handles');
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!drag) return;
+    if (drag.mode === 'move') {
+      t.x = drag.baseX + (e.clientX - drag.startX);
+      t.y = drag.baseY + (e.clientY - drag.startY);
+      applyTransform();
+      tryShave();
+    } else if (drag.mode === 'rotate') {
+      var a = Math.atan2(e.clientY - drag.center.y, e.clientX - drag.center.x) * 180 / Math.PI;
+      t.angleDeg = drag.baseAngle + (a - drag.startAngle);
+      applyTransform();
+    } else if (drag.mode === 'scale') {
+      var d = Math.hypot(e.clientX - drag.center.x, e.clientY - drag.center.y);
+      t.scale = Math.min(3.0, Math.max(0.4, drag.baseScale * (d / drag.startDist)));
+      applyTransform();
+    }
+  });
+
+  document.addEventListener('mouseup', function () {
+    if (!drag) return;
+    drag = null;
+    clipper.classList.remove('dragging', 'show-handles');
+    setBuzzing(false);
+    prevTeeth = null;
+  });
+
+  /* ── scroll to resize ── */
+  clipper.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var dir = e.deltaY > 0 ? -1 : 1;
+    t.scale = Math.min(3.0, Math.max(0.4, t.scale + dir * 0.08));
+    applyTransform();
+  }, { passive: false });
+
+  applyTransform();
+})();
+</script>
+</body>
+</html>
