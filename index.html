@@ -87,7 +87,9 @@
     cursor: pointer;
     margin-bottom: 4px;
     padding-right: 4px;
+    visibility: hidden; /* shown once something has been shaved */
   }
+  .reset-link.visible { visibility: visible; }
   .photo-wrapper {
     position: relative;
     width: 280px;
@@ -354,11 +356,12 @@
     // outer edge: up the left side, over the crown, down the right side
     [96,174],[95,160],[95,140],[96,128],[98,116],[101,106],[105,98],[110,90],
     [116,84],[124,79],[133,75],[143,72],[153,71],[163,72],[172,75],[180,79],
-    [188,84],[198,89],[207,95],[213,101],[217,108],[219,118],[220,130],[221,142],
-    [222,154],[222,164],[221,172],[219,180],
+    [188,84],[200,88],[210,94],[216,100],[220,107],[221,118],[222,130],[223,142],
+    [224,154],[224,164],[223,172],[222,182],[220,192],[218,201],
     // inner edge: up the right sideburn, across the hairline, down the left sideburn
     // (dips lower on the left to cover the light-blond fringe at the temple)
-    [205,180],[203,165],[201,150],[198,133],[194,124],[189,118],[184,114],[178,111],
+    [208,201],[207,192],[206,184],[205,176],[203,165],[201,150],[198,133],[194,124],
+    [189,118],[184,114],[178,111],
     [170,109],[160,108],[150,108],[142,109],[138,112],[132,118],[126,126],[120,133],
     [115,138],[112,148],[110,158],[108,166],[106,174]
   ];
@@ -368,7 +371,7 @@
     shaveMask.lineTo(hairOutline[hp][0], hairOutline[hp][1]);
   }
   shaveMask.closePath();
-  shaveMask.ellipse(161, 206, 22, 9, 0, 0, Math.PI * 2);    // mustache
+  shaveMask.ellipse(158, 206, 25, 9, 0, 0, Math.PI * 2);    // mustache
 
   // total shaveable pixel count, measured once for the shine threshold
   var maskArea = (function () {
@@ -417,19 +420,25 @@
     if (painted / maskArea > 0.55) drawShine();
   }
 
+  var resetLink = document.getElementById('resetLink');
+
   function resetShave() {
     shaveCtx.clearRect(0, 0, shaveCanvas.width, shaveCanvas.height);
     shineDrawn = false;
     strokesSinceCheck = 0;
+    resetLink.classList.remove('visible');
   }
 
-  document.getElementById('resetLink').addEventListener('click', resetShave);
+  resetLink.addEventListener('click', resetShave);
   photoWrapper.addEventListener('dblclick', resetShave);
 
   /* ── shave stroke (WarioWare-style: skin base + stubble) ── */
   function shaveStamp(cx, cy, scale) {
     var r = 10 * scale;
 
+    if (shaveCtx.isPointInPath(shaveMask, cx, cy)) {
+      resetLink.classList.add('visible'); // only once hair is actually shaved
+    }
     shaveCtx.save();
     shaveCtx.clip(shaveMask); // strokes only land on hair / mustache
 
