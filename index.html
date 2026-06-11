@@ -385,29 +385,39 @@
     return n;
   })();
 
-  /* ── shine state ── */
-  var shineDrawn = false;
+  /* ── completion state: clean shave + sparkle once the whole mask is filled ── */
+  var SKIN = '#E9C4B2'; // sampled from the photo's forehead/temple
+  var shaveComplete = false;
   var strokesSinceCheck = 0;
 
-  function drawShine() {
-    var g = shaveCtx.createRadialGradient(0, 0, 0, 0, 0, 42);
-    g.addColorStop(0, 'rgba(255,255,255,0.58)');
-    g.addColorStop(1, 'rgba(255,255,255,0)');
-    shaveCtx.save();
-    shaveCtx.clip(shaveMask);
-    shaveCtx.globalCompositeOperation = 'source-over';
-    shaveCtx.translate(160, 90);
-    shaveCtx.scale(1, 30 / 42);
+  function drawSparkle(cx, cy, R, color) {
+    var i = R * 0.16; // concave waist of the 4-point star
     shaveCtx.beginPath();
-    shaveCtx.arc(0, 0, 42, 0, Math.PI * 2);
-    shaveCtx.fillStyle = g;
+    shaveCtx.moveTo(cx, cy - R);
+    shaveCtx.quadraticCurveTo(cx + i, cy - i, cx + R, cy);
+    shaveCtx.quadraticCurveTo(cx + i, cy + i, cx, cy + R);
+    shaveCtx.quadraticCurveTo(cx - i, cy + i, cx - R, cy);
+    shaveCtx.quadraticCurveTo(cx - i, cy - i, cx, cy - R);
+    shaveCtx.fillStyle = color;
     shaveCtx.fill();
-    shaveCtx.restore();
-    shineDrawn = true;
   }
 
-  function maybeTriggerShine() {
-    if (shineDrawn) return;
+  function finishShave() {
+    // wipe the speckled strokes, lay down smooth skin over the whole mask
+    shaveCtx.clearRect(0, 0, shaveCanvas.width, shaveCanvas.height);
+    shaveCtx.save();
+    shaveCtx.clip(shaveMask);
+    shaveCtx.fillStyle = SKIN;
+    shaveCtx.fillRect(0, 0, shaveCanvas.width, shaveCanvas.height);
+    shaveCtx.restore();
+    // gold shine sparkles on the crown
+    drawSparkle(162, 92, 16, '#FFC83D');
+    drawSparkle(190, 108, 8, '#FFC83D');
+    shaveComplete = true;
+  }
+
+  function maybeFinishShave() {
+    if (shaveComplete) return;
     strokesSinceCheck++;
     if (strokesSinceCheck < 15) return;
     strokesSinceCheck = 0;
@@ -416,15 +426,14 @@
     for (var i = 3; i < data.length; i += 4) {
       if (data[i] > 0) painted++;
     }
-    // shine once most of the shaveable area is buzzed
-    if (painted / maskArea > 0.55) drawShine();
+    if (painted / maskArea > 0.92) finishShave();
   }
 
   var resetLink = document.getElementById('resetLink');
 
   function resetShave() {
     shaveCtx.clearRect(0, 0, shaveCanvas.width, shaveCanvas.height);
-    shineDrawn = false;
+    shaveComplete = false;
     strokesSinceCheck = 0;
     resetLink.classList.remove('visible');
   }
@@ -434,6 +443,7 @@
 
   /* ── shave stroke (WarioWare-style: skin base + stubble) ── */
   function shaveStamp(cx, cy, scale) {
+    if (shaveComplete) return; // head is clean — nothing left to buzz
     var r = 10 * scale;
 
     if (shaveCtx.isPointInPath(shaveMask, cx, cy)) {
@@ -448,7 +458,7 @@
     shaveCtx.globalCompositeOperation = 'source-over';
     shaveCtx.beginPath();
     shaveCtx.arc(cx + jx, cy + jy, r, 0, Math.PI * 2);
-    shaveCtx.fillStyle = '#F0C27F';
+    shaveCtx.fillStyle = SKIN;
     shaveCtx.fill();
 
     // PASS 2 — stubble dots
@@ -464,8 +474,8 @@
     }
     shaveCtx.restore();
 
-    // PASS 3 — crown shine (lazy, fires once)
-    maybeTriggerShine();
+    // PASS 3 — completion check (clean skin + sparkle, fires once)
+    maybeFinishShave();
   }
 
   /* ════════ CLIPPER ════════ */
