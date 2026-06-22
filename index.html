@@ -242,20 +242,20 @@
 <div class="shell">
 
   <nav class="nav">
-    <ul id="navList">
-      <li class="active" data-tab="Home">Home</li>
-      <li data-tab="About Me">About Me</li>
-      <li data-tab="Resume">Resume</li>
-      <li data-tab="Lucid Motors">Lucid Motors</li>
-      <li data-tab="BYU Racing FSAE">BYU Racing FSAE</li>
-      <li data-tab="SO-101">SO-101</li>
-      <li data-tab="B&amp;K PSU MCP">B&amp;K PSU MCP</li>
-      <li data-tab="ElectroPuch">ElectroPuch</li>
+    <ul id="navList" role="tablist" aria-label="Sections">
+      <li class="active" role="tab" tabindex="0" aria-selected="true" aria-controls="contentInner" data-tab="Home" data-slug="home">Home</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="About Me" data-slug="about">About Me</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Resume" data-slug="resume">Resume</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Lucid Motors" data-slug="lucid-motors">Lucid Motors</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="BYU Racing FSAE" data-slug="byu-racing">BYU Racing FSAE</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="SO-101" data-slug="so-101">SO-101</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="B&amp;K PSU MCP" data-slug="bk-psu-mcp">B&amp;K PSU MCP</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="ElectroPuch" data-slug="electropuch">ElectroPuch</li>
     </ul>
   </nav>
 
   <main class="content">
-    <div id="contentInner">[ Welcome ]</div>
+    <div id="contentInner" role="tabpanel" tabindex="0">[ Welcome ]</div>
   </main>
 
   <aside class="right">
@@ -310,28 +310,102 @@
 (function () {
   'use strict';
 
-  /* ════════ TAB NAVIGATION ════════ */
+  /* ════════ TAB NAVIGATION + HASH ROUTING ════════
+     Single source of truth: activateTab(slug) is the ONLY place that mutates
+     the DOM/active state. Clicks (and keyboard) set location.hash; a single
+     hashchange listener calls activateTab. On load we read location.hash so
+     deep links (/#projects) paint the right tab on first frame. */
   var navList = document.getElementById('navList');
   var contentInner = document.getElementById('contentInner');
+  var tabItems = Array.prototype.slice.call(navList.querySelectorAll('li'));
 
-  navList.addEventListener('click', function (e) {
-    var li = e.target.closest('li');
-    if (!li || li.classList.contains('active')) return;
+  // slug -> li, built from the markup so the HTML stays the source of truth
+  var tabsBySlug = {};
+  tabItems.forEach(function (li) { tabsBySlug[li.dataset.slug] = li; });
+  var DEFAULT_SLUG = 'home';
 
-    navList.querySelectorAll('li').forEach(function (n) { n.classList.remove('active'); });
-    li.classList.add('active');
+  function slugFromHash() {
+    var s = (location.hash || '').replace(/^#/, '').toLowerCase();
+    return tabsBySlug[s] ? s : DEFAULT_SLUG;
+  }
+
+  var currentSlug = null;
+
+  function activateTab(slug, animate) {
+    if (!tabsBySlug[slug]) slug = DEFAULT_SLUG;
+    if (slug === currentSlug) return;
+    currentSlug = slug;
+
+    var li = tabsBySlug[slug];
+    tabItems.forEach(function (n) {
+      var on = n === li;
+      n.classList.toggle('active', on);
+      n.setAttribute('aria-selected', on ? 'true' : 'false');
+      n.tabIndex = on ? 0 : -1;
+    });
 
     var tab = li.dataset.tab;
-    contentInner.classList.remove('fade-in');
-    contentInner.style.opacity = '0';
-    setTimeout(function () {
-      contentInner.textContent = tab === 'Home'
+    document.title = slug === DEFAULT_SLUG
+      ? 'Landon McNeil'
+      : 'Landon McNeil — ' + tab;
+
+    function paint() {
+      contentInner.textContent = slug === DEFAULT_SLUG
         ? '[ Welcome ]'
         : '[ ' + tab + ' — content coming soon ]';
       contentInner.classList.add('fade-in');
       contentInner.style.opacity = '1';
-    }, 100);
+    }
+
+    if (animate === false) {
+      paint();
+    } else {
+      contentInner.classList.remove('fade-in');
+      contentInner.style.opacity = '0';
+      setTimeout(paint, 100);
+    }
+  }
+
+  // Clicks update the hash only; hashchange does the activation (no double work).
+  // Setting location.hash to a slug that is NOT an element id => no scroll jump.
+  navList.addEventListener('click', function (e) {
+    var li = e.target.closest('li');
+    if (!li) return;
+    var slug = li.dataset.slug;
+    if (slug === currentSlug) return;
+    if (slug === DEFAULT_SLUG) {
+      // keep the URL clean for the default tab, but still re-sync
+      history.pushState(null, '', location.pathname + location.search);
+      activateTab(slug, true);
+    } else {
+      location.hash = slug;
+    }
   });
+
+  // Roving-tabindex keyboard support across the tablist.
+  navList.addEventListener('keydown', function (e) {
+    var li = e.target.closest('li');
+    if (!li) return;
+    var idx = tabItems.indexOf(li);
+    var next = null;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = tabItems[(idx + 1) % tabItems.length];
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = tabItems[(idx - 1 + tabItems.length) % tabItems.length];
+    else if (e.key === 'Home') next = tabItems[0];
+    else if (e.key === 'End') next = tabItems[tabItems.length - 1];
+    else if (e.key === 'Enter' || e.key === ' ') { li.click(); e.preventDefault(); return; }
+    if (next) {
+      e.preventDefault();
+      next.focus();
+    }
+  });
+
+  window.addEventListener('hashchange', function () {
+    activateTab(slugFromHash(), true);
+  });
+
+  // First paint: honor a deep link, fall back to default. No animation so the
+  // correct tab is up immediately with no flicker.
+  activateTab(slugFromHash(), false);
 
   /* ════════ PHOTO CANVASES ════════ */
   var photoCanvas = document.getElementById('photoCanvas');
