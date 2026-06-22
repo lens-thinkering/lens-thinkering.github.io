@@ -50,7 +50,7 @@
   /* ── Center content ── */
   .content {
     padding: 32px;
-    overflow: hidden;
+    overflow-y: auto; /* resume can exceed the viewport; other tabs stay short */
   }
   #contentInner {
     transition: opacity 100ms linear;
@@ -58,6 +58,119 @@
     font-size: 14px;
   }
   #contentInner.fade-in { transition: opacity 150ms linear; }
+
+  /* ── Resume tab ──
+     Single narrow, centered column with generous negative space
+     (matthewdilloncohen.nyc spirit). Switches to Inter, not monospace. */
+  #contentInner.resume-view { font-family: 'Inter', sans-serif; }
+  .resume {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 8px 0 80px;
+  }
+  .resume__eyebrow,
+  .resume__section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #000;
+  }
+
+  /* formal PDF card */
+  .resume__pdf {
+    border: 1px solid #000;
+    padding: 22px 22px 0;
+    margin-bottom: 64px;
+  }
+  .resume__doctitle {
+    font-weight: 900;
+    font-size: 22px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin: 10px 0 18px;
+  }
+  .resume__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .resume__btn {
+    display: inline-block;
+    border: 1px solid #000;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    color: #000;
+    background: #fff;
+    transition: background 120ms linear, color 120ms linear;
+  }
+  .resume__btn:hover { background: #000; color: #fff; }
+  .resume__embed {
+    display: block;
+    width: 100%;
+    height: 520px;
+    border: 1px solid #000;
+    border-bottom: none;
+    margin-left: -22px;
+    width: calc(100% + 44px);
+  }
+  .resume__embed-fallback {
+    padding: 24px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* high-signal entries */
+  .resume__section-title { margin-bottom: 28px; }
+  .entry { margin-bottom: 44px; }
+  .entry:last-child { margin-bottom: 0; }
+  .entry__org {
+    font-weight: 900;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+  }
+  .entry__meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    margin: 2px 0 16px;
+  }
+  .entry__title { font-weight: 700; }
+  .entry__dates { color: #555; white-space: nowrap; }
+  .entry__lede {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #555;
+    margin: 14px 0 8px;
+  }
+  .entry__list {
+    list-style: none;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .entry__list li { position: relative; padding-left: 18px; margin-bottom: 7px; }
+  .entry__list li::before {
+    content: "\2014"; /* em dash bullet, matches the nav arrow language */
+    position: absolute;
+    left: 0;
+    color: #000;
+  }
+  .entry__sub {
+    list-style: none;
+    margin: 7px 0 0 0;
+    font-size: 13px;
+    color: #444;
+  }
+  .entry__sub li { padding-left: 18px; }
+  .entry__sub li::before { content: "\00B7"; font-weight: 900; }
+  .entry__list--skills li::before { content: "\2192"; } /* arrow for skills */
 
   /* ── Right column ── */
   .right {
@@ -234,6 +347,11 @@
       left: 16px;
     }
     .clipper-container { top: 190px; } /* clear of the nav rows */
+
+    /* inline PDF embedding is unreliable on phones/tablets: hide the embed,
+       lean on the Open / Download card affordances instead */
+    .resume__embed { display: none; }
+    .resume__pdf { padding-bottom: 22px; }
   }
 </style>
 </head>
@@ -324,6 +442,128 @@
   tabItems.forEach(function (li) { tabsBySlug[li.dataset.slug] = li; });
   var DEFAULT_SLUG = 'home';
 
+  /* ── Resume content (Phase 2) ──
+     PDF served from a relative, URL-safe asset path; friendly name preserved
+     for downloads. High-signal entries transcribed faithfully from
+     Obsidian Vault/Portfolio Website Content/Resume.md. */
+  var RESUME_PDF = 'assets/landon-mcneil-resume-2026.pdf';
+  var RESUME_PDF_NAME = 'Landon McNeil Resume - Robotics Test & Validation - June 2026.pdf';
+
+  var resumeEntries = [
+    {
+      org: 'Lucid Motors',
+      title: 'Battery Test Engineer',
+      dates: 'July 2024 – Present',
+      learned: [
+        'That I can solve any problem and learn any skill to get the job done.',
+        'To troubleshoot, troubleshoot, troubleshoot — almost nothing will work perfectly the first time.',
+        'How to make both quick-turn, kludged-together test solutions, AND reusable, repeatable, and well-made ones.',
+        { text: 'How to plan, coordinate, and execute complex and large-scale tests.',
+          sub: ["Safely and effectively blowing up a 100+ kWh battery pack while collecting GB's of data and introducing as few 'observer effects' as possible is my bread and butter now."] }
+      ],
+      skills: [
+        'Custom test fixture design using CATIA 3DX',
+        'Data analysis and test automation using Python and AI',
+        "Data acquisition and test instrumentation (in my opinion it's 50% science, 50% art)"
+      ]
+    },
+    {
+      org: 'BYU Racing',
+      title: 'High Voltage Team Lead',
+      dates: 'Aug 2022 – June 2024',
+      learned: [
+        'To ball on a budget.',
+        'To lead and work with a small engineering team, rather than do everything myself.',
+        'What parts of my schooling actually mattered for my future career.'
+      ],
+      skills: [
+        'Leading a focused team',
+        'Working through a full product design cycle (Ideation → Design → Build → Test)',
+        'High voltage design and handling',
+        'DFM'
+      ]
+    },
+    {
+      org: 'Hypercraft',
+      title: 'Battery Engineering Intern',
+      dates: 'Nov 2023 – May 2024',
+      learned: [
+        "What it's like to work at a scrappy, strapped startup.",
+        'How to take a complex system from CAD to IRL.',
+        'About batteries in the real world — how much they cost, how you handle them, how to connect them together, and what the design tradeoffs are for custom battery packs.'
+      ],
+      skills: [
+        'Using Solidworks for complex part and assembly design'
+      ]
+    },
+    {
+      org: 'Wheeler Research Group',
+      title: 'Li-ion Battery Research Assistant',
+      dates: 'Sept 2022 – June 2024',
+      learned: [
+        'The meaning of “kludge.”',
+        'Most of what I know about battery electrochemistry.',
+        'Research rigor and to keep trying new ideas as quickly as possible.'
+      ],
+      skills: [
+        'Making whatever materials and equipment were on-hand go a lot further than their intended uses',
+        'Manual machining and fabrication'
+      ]
+    }
+  ];
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function buildResumeHTML() {
+    var html = '<div class="resume">';
+
+    // formal PDF — card with Open/Download + inline preview (hidden on mobile)
+    html += '<section class="resume__pdf">'
+      + '<p class="resume__eyebrow">Formal résumé</p>'
+      + '<h2 class="resume__doctitle">Landon McNeil Resume, June 2026</h2>'
+      + '<div class="resume__actions">'
+      + '<a class="resume__btn" href="' + esc(RESUME_PDF) + '" target="_blank" rel="noopener">Open ↗</a>'
+      + '<a class="resume__btn" href="' + esc(RESUME_PDF) + '" download="' + esc(RESUME_PDF_NAME) + '">Download ↓</a>'
+      + '</div>'
+      + '<object class="resume__embed" data="' + esc(RESUME_PDF) + '#view=FitH" type="application/pdf" aria-label="Resume PDF preview">'
+      + '<p class="resume__embed-fallback">Your browser can’t show the PDF here — use Open or Download above.</p>'
+      + '</object>'
+      + '</section>';
+
+    // high-signal entries
+    html += '<section class="resume__entries">'
+      + '<h2 class="resume__section-title">Less Formal Résumé</h2>';
+    resumeEntries.forEach(function (e) {
+      html += '<article class="entry">'
+        + '<h3 class="entry__org">' + esc(e.org) + '</h3>'
+        + '<p class="entry__meta"><span class="entry__title">' + esc(e.title) + '</span>'
+        + '<span class="entry__dates">' + esc(e.dates) + '</span></p>'
+        + '<p class="entry__lede">The job where I learned…</p>'
+        + '<ul class="entry__list">';
+      e.learned.forEach(function (item) {
+        if (typeof item === 'string') {
+          html += '<li>' + esc(item) + '</li>';
+        } else {
+          html += '<li>' + esc(item.text) + '<ul class="entry__sub">';
+          item.sub.forEach(function (s) { html += '<li>' + esc(s) + '</li>'; });
+          html += '</ul></li>';
+        }
+      });
+      html += '</ul>'
+        + '<p class="entry__lede">Key skills</p>'
+        + '<ul class="entry__list entry__list--skills">';
+      e.skills.forEach(function (s) { html += '<li>' + esc(s) + '</li>'; });
+      html += '</ul></article>';
+    });
+    html += '</section></div>';
+
+    return html;
+  }
+
   function slugFromHash() {
     var s = (location.hash || '').replace(/^#/, '').toLowerCase();
     return tabsBySlug[s] ? s : DEFAULT_SLUG;
@@ -350,9 +590,16 @@
       : 'Landon McNeil — ' + tab;
 
     function paint() {
-      contentInner.textContent = slug === DEFAULT_SLUG
-        ? '[ Welcome ]'
-        : '[ ' + tab + ' — content coming soon ]';
+      if (slug === 'resume') {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildResumeHTML();
+      } else {
+        contentInner.classList.remove('resume-view');
+        contentInner.textContent = slug === DEFAULT_SLUG
+          ? '[ Welcome ]'
+          : '[ ' + tab + ' — content coming soon ]';
+      }
+      if (contentInner.parentElement) contentInner.parentElement.scrollTop = 0;
       contentInner.classList.add('fade-in');
       contentInner.style.opacity = '1';
     }
