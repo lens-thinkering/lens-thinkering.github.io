@@ -390,7 +390,7 @@
 </div>
 
 <!-- ── Clipper ── -->
-<div class="clipper-hint" id="clipperHint">&#8593; drag the clippers onto the hair to shave<br>&#8226; scroll to resize<br>&#8226; circle handle rotates, square resizes</div>
+<div class="clipper-hint" id="clipperHint">&#8226; drag the clippers onto the hair to shave<br>&#8226; scroll to resize<br>&#8226; circle handle rotates, square resizes</div>
 <div class="clipper-container" id="clipper">
   <div class="handle rotate-handle" id="rotateHandle"></div>
   <div class="handle resize-handle" id="resizeHandle"></div>
@@ -833,6 +833,41 @@
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
 
+  /* ── rest the clipper just left of the head on load ──
+     Anchored to the live photo position so it never covers page content; the
+     user only meets the clipper beside the picture. Derived from the measured
+     teeth point so it stays correct regardless of the CSS base position
+     (which differs between desktop and the mobile @media rule). */
+  function positionClipperBesideHead() {
+    // measure with the identity transform so teethPoint() reflects the CSS base
+    t.x = 0; t.y = 0;
+    applyTransform();
+
+    var photo = photoWrapper.getBoundingClientRect();
+    var teeth = teethPoint();
+    var body = clipper.getBoundingClientRect();
+
+    // desired teeth landing: just left of the head, at hair mid-height
+    var GAP = 10;                         // breathing room from the photo edge
+    var desiredX = photo.left - GAP;
+    var desiredY = photo.top + 140;       // hair vertical midpoint within the photo
+
+    t.x = desiredX - teeth.x;
+    t.y = desiredY - teeth.y;
+    applyTransform();
+
+    // keep the clipper on-screen so it stays discoverable on short viewports
+    var rect = clipper.getBoundingClientRect();
+    var vw = document.documentElement.clientWidth;
+    var vh = document.documentElement.clientHeight;
+    var pad = 4;
+    if (rect.left < pad)              t.x += pad - rect.left;
+    if (rect.right > vw - pad)        t.x -= rect.right - (vw - pad);
+    if (rect.top < pad)              t.y += pad - rect.top;
+    if (rect.bottom > vh - pad)      t.y -= rect.bottom - (vh - pad);
+    applyTransform();
+  }
+
   var prevTeeth = null;
 
   function setBuzzing(on) {
@@ -867,6 +902,9 @@
 
   /* ── translate (drag) ── */
   var drag = null; // { mode: 'move'|'rotate'|'scale', ... }
+  var hasUserMoved = false; // once true, stop auto-anchoring to the head
+
+  clipper.addEventListener('pointerdown', function () { hasUserMoved = true; });
 
   clipper.addEventListener('pointerdown', function (e) {
     if (e.target === rotateHandle || e.target === resizeHandle) return;
@@ -925,12 +963,19 @@
   /* ── scroll to resize ── */
   clipper.addEventListener('wheel', function (e) {
     e.preventDefault();
+    hasUserMoved = true;
     var dir = e.deltaY > 0 ? -1 : 1;
     t.scale = Math.min(3.0, Math.max(0.4, t.scale + dir * 0.08));
     applyTransform();
   }, { passive: false });
 
-  applyTransform();
+  // first paint: anchor beside the head once layout has settled
+  requestAnimationFrame(positionClipperBesideHead);
+
+  // re-anchor on resize/orientation change, but never yank it from the user
+  window.addEventListener('resize', function () {
+    if (!hasUserMoved && !drag) positionClipperBesideHead();
+  });
 })();
 </script>
 </body>
