@@ -172,6 +172,51 @@
   .entry__sub li::before { content: "\00B7"; font-weight: 900; }
   .entry__list--skills li::before { content: "\2192"; } /* arrow for skills */
 
+  /* ── About Me page (reuses the .resume centered column + Inter font) ── */
+  .about__intro {
+    font-weight: 900;
+    font-size: 22px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin: 0 0 22px;
+  }
+  .about__subhead {
+    font-weight: 900;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    margin: 8px 0 16px;
+  }
+  .about__p {
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 18px;
+  }
+  .about__p a { color: #1a56db; text-decoration: underline; }
+  .about__p a:hover { color: #1e40af; }
+  .about__figure {
+    margin: 8px 0 28px;
+  }
+  .about__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid #000;
+    margin: 8px 0 28px;
+  }
+  .about__figure .about__img { margin: 0; }
+  .about__caption {
+    font-size: 13px;
+    line-height: 1.4;
+    color: #555;
+    margin-top: 8px;
+  }
+  .about__gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .about__gallery .about__img { margin: 0; }
+
   /* ── Right column ── */
   .right {
     border-left: 1px solid #000;
@@ -352,6 +397,10 @@
        lean on the Open / Download card affordances instead */
     .resume__embed { display: none; }
     .resume__pdf { padding-bottom: 22px; }
+
+    /* stack the closing gallery on narrow screens */
+    .about__gallery { grid-template-columns: 1fr; }
+    .about__gallery .about__img { margin: 0 0 18px; }
   }
 </style>
 </head>
@@ -564,6 +613,67 @@
     return html;
   }
 
+  /* ── About Me content (Phase 3) ──
+     Prose transcribed from the Google Doc "Portfolio Website, About Me page".
+     Body is an ordered list of blocks so paragraphs, images, and the closing
+     gallery render in document order. Paragraph text is pre-escaped and may
+     contain trusted inline <a> markup built below. */
+  var ABOUT_IMG = 'assets/about/';
+
+  // internal links route through the existing hashchange listener; external
+  // links open in a new tab. `a()` keeps the raw text escaped.
+  function aInt(slug, text) {
+    return '<a href="#' + slug + '">' + esc(text) + '</a>';
+  }
+  function aExt(href, text) {
+    return '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(text) + '</a>';
+  }
+
+  function aboutImg(file, alt, caption) {
+    var img = '<img class="about__img" src="' + esc(ABOUT_IMG + file) + '" alt="' + esc(alt) + '" loading="lazy">';
+    if (!caption) return img;
+    return '<figure class="about__figure">' + img
+      + '<figcaption class="about__caption">' + esc(caption) + '</figcaption></figure>';
+  }
+
+  function buildAboutHTML() {
+    var blocks = [];
+
+    blocks.push('<p class="about__intro">Hi! My name is Landon McNeil.</p>');
+    blocks.push(aboutImg('hard-hat.jpg', 'Landon in a hard hat', 'this is me touring a coal power plant'));
+
+    blocks.push('<p class="about__p">I grew up in Sandy, Utah, and currently live in the Bay Area in California with my amazing wife and toddler son.</p>');
+
+    blocks.push('<p class="about__p">I studied Mechanical Engineering at Brigham Young University, but like to consider myself an Electro-Mech-Chemical Engineer by interests and experiences. I thrive in startup and research environments and love tackling problems at the frontier. A defining conviction of mine is that if I am interested in a subject, I can learn and do anything necessary to make myself an expert in it.</p>');
+
+    blocks.push('<p class="about__p">During school I helped start ' + aInt('byu-racing', 'BYU Racing') + ', a new-to-BYU FSAE electric racing club. Over the course of two years I led the High Voltage and Battery teams, helping the team/school build its first all-electric Formula Student car to take to the competition in Michigan in 2024.</p>');
+
+    blocks.push('<p class="about__p">While an undergrad I also worked as a research assistant for Dr. Dean Wheeler, focusing on battery materials research pertaining to silicon anodes and Li-O₂ batteries. In a chemical engineering research lab, I brought a mechanical engineer’s perspective and skills to the group (most Chem-E grad students don’t know a lathe from a mill I found out).</p>');
+
+    blocks.push(aboutImg('dry-room.jpg', 'Landon in a battery dry room', 'this is me working in a clean room with grad student Kyle'));
+
+    blocks.push('<p class="about__p">Also during my undergrad, I worked for a local startup called Hypercraft. At the time, Hypercraft made bespoke battery packs for custom EV conversions and products, and had an electric powertrain product line. While there I worked under the lead battery engineer on a '
+      + aExt('https://youtu.be/AJ-t0FfyoHQ?si=MrS2_akIWZ3dtth6', 'custom Corvette “electromod”') + ' battery pack, a large '
+      + aExt('https://hypercraftusa.com/natc-hybrid-tactical-powertrain/', 'military hybrid-electric pack') + ', and improvements to the main product line.</p>');
+
+    blocks.push(aboutImg('moving-to-ca.jpg', 'Moving to California', 'this is me moving to California'));
+
+    blocks.push('<p class="about__p">Two years ago my family and I packed up and moved to California for a job at Lucid Motors where I currently work as a Test Engineer in the High Voltage Build and Test team. My work has spanned testing from cell-level up to pack and vehicle levels, in addition to component testing. I regularly design and build custom software and hardware to support testing efforts, and am skilled in multiple CAD programs.</p>');
+
+    blocks.push('<p class="about__p">I have enjoyed being a test engineer as it has allowed me to become a jack-of-all-trades. Testing requires you to learn about the full product and encourages interdisciplinary skill development.</p>');
+
+    blocks.push('<p class="about__p">My new passion is working on AI and robotics projects in my free time. Most recently, it has meant building a SO-101 robot arm and ' + aInt('so-101', 'training custom ACT policies for it') + '.</p>');
+
+    blocks.push('<p class="about__subhead">More shots of me doing stuff I love:</p>');
+    blocks.push('<div class="about__gallery">'
+      + aboutImg('rollerskating.jpg', 'Landon rollerskating')
+      + aboutImg('rock-climbing.jpg', 'Landon rock climbing')
+      + aboutImg('working-on-bike.jpg', 'Landon working on his bike')
+      + '</div>');
+
+    return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
+  }
+
   function slugFromHash() {
     var s = (location.hash || '').replace(/^#/, '').toLowerCase();
     return tabsBySlug[s] ? s : DEFAULT_SLUG;
@@ -593,6 +703,9 @@
       if (slug === 'resume') {
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildResumeHTML();
+      } else if (slug === 'about') {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildAboutHTML();
       } else {
         contentInner.classList.remove('resume-view');
         contentInner.textContent = slug === DEFAULT_SLUG
