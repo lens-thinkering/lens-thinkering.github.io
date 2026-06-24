@@ -287,6 +287,61 @@
     padding-left: 3px; /* optically center the triangle */
   }
 
+  /* ── BYU Racing video facades ──
+     Click-to-load YouTube: show a poster + play button, swap in the iframe on
+     first click so YouTube isn't loaded until the visitor wants it. */
+  .byu__video {
+    border: 1px solid #000;
+    margin: 8px 0 8px;
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .byu__video--portrait {
+    aspect-ratio: 9 / 16;
+    max-width: 340px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .byu__video-poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .byu__video-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 20px;
+    padding-left: 4px; /* optically center the triangle */
+  }
+  .byu__video:hover .byu__video-play { background: rgba(0, 0, 0, 0.85); }
+  .byu__video iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  .byu__video-cap { margin: 0 0 28px; }
+
   /* ── Right column ── */
   .right {
     border-left: 1px solid #000;
@@ -859,6 +914,78 @@
     return '<div class="resume"><section class="about lucid">' + blocks.join('') + '</section></div>';
   }
 
+  /* ── BYU Racing content ──
+     Transcribed from the Google Doc "BYU Racing, Portfolio Page". Prose reuses
+     the .about__* styles; the two YouTube clips use a click-to-load facade
+     (poster + play button) wired up by initByuVideos() once the HTML is in DOM. */
+  var BYU_IMG = 'assets/byu-racing/';
+
+  function byuImg(file, alt, caption, cls) {
+    var img = '<img class="about__img' + (cls ? ' ' + cls : '') + '" src="' + esc(BYU_IMG + file) + '" alt="' + esc(alt) + '" loading="lazy">';
+    if (!caption) return img;
+    return '<figure class="about__figure">' + img
+      + '<figcaption class="about__caption">' + esc(caption) + '</figcaption></figure>';
+  }
+
+  // Click-to-load YouTube facade: poster image + play button; the iframe is
+  // swapped in on first click (see initByuVideos), so YouTube loads only on demand.
+  function byuVideo(id, poster, alt, caption, portrait) {
+    var cls = 'byu__video' + (portrait ? ' byu__video--portrait' : '');
+    return '<figure class="about__figure">'
+      + '<div class="' + cls + '" data-yt="' + esc(id) + '" role="button" tabindex="0" aria-label="Play video">'
+      + '<img class="byu__video-poster" src="' + esc(BYU_IMG + poster) + '" alt="' + esc(alt) + '" loading="lazy">'
+      + '<span class="byu__video-play" aria-hidden="true">&#9654;</span>'
+      + '</div>'
+      + (caption ? '<figcaption class="about__caption byu__video-cap">' + esc(caption) + '</figcaption>' : '')
+      + '</figure>';
+  }
+
+  function buildByuRacingHTML() {
+    var blocks = [];
+
+    blocks.push('<p class="about__intro">BYU Racing</p>');
+
+    blocks.push('<p class="about__p">Over the course of about 2 years I helped get BYU Racing from a dream to a reality. During my time with the team I led the High Voltage sub-team, in charge of the motor, controller, and battery pack, and later a senior capstone team focusing on just the battery pack.</p>');
+
+    blocks.push('<p class="about__p">All systems of the vehicle were designed, built, and tested by students and it’s hard for me to understate how massive an undertaking it was to get a vehicle to the competition—one that passed “Tech” nonetheless! iykyk.</p>');
+
+    blocks.push('<p class="about__p">Everything I was missing in my coursework I found while I was a part of the BYU Racing team. As the saying goes, working with the team was where the rubber met the road for me. Engineering became more than homework, and “first principles” became actually useful.</p>');
+
+    blocks.push(byuImg('seniors.jpg', 'BYU Racing seniors with the car', 'A handful of the other team Seniors  and I with our car.'));
+    blocks.push(byuImg('me-soldering.jpg', 'Landon soldering voltage sense lines', 'Soldering hundreds of voltage sense lines to our battery modules'));
+    blocks.push(byuImg('messy-pack-wiring.jpg', 'Inside the battery pack', 'A peek inside the battery pack; Last minute wiring got pretty gnarly at 3am in the parking lot the day before competition'));
+    blocks.push(byuImg('failing-rain-test.jpg', 'BYU Racing car in the rain test', 'BYU Racing’s first ever fully electric racecar going through the rain test at the Michigan competition in 2024'));
+
+    blocks.push(byuVideo('TvMWuo60lBk', 'precomp-video-poster.jpg', 'BYU Racing 2024 Pre-Competition Accumulator Video',
+      'BYU Racing 2024 Pre-Competition Accumulator Video', false));
+    blocks.push(byuVideo('6uDfTbVrUEM', 'parking-lot-poster.jpg', 'BYU Racing car drifting in a parking lot at night',
+      'One of our first drives in the mall parking lot at 2am. I guess we did our best work after midnight..', true));
+
+    return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
+  }
+
+  // Attach click-to-load handlers to every .byu__video facade currently in DOM.
+  function initByuVideos() {
+    var vids = document.querySelectorAll('.byu__video');
+    vids.forEach(function (el) {
+      function load() {
+        var id = el.getAttribute('data-yt');
+        if (!id || el.querySelector('iframe')) return;
+        var ifr = document.createElement('iframe');
+        ifr.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+        ifr.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+        ifr.setAttribute('allowfullscreen', '');
+        ifr.title = el.getAttribute('aria-label') || 'YouTube video';
+        el.innerHTML = '';
+        el.appendChild(ifr);
+      }
+      el.addEventListener('click', load);
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); load(); }
+      });
+    });
+  }
+
   /* ── Looping YouTube segment (1:00–1:35) via the IFrame Player API ──
      A plain iframe can't loop a sub-segment, so we drive it with the API: seek
      back to 60s whenever playback passes 95s. Muted is required for autoplay. */
@@ -972,6 +1099,10 @@
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildLucidMotorsHTML();
         initLucidVideo();
+      } else if (slug === 'byu-racing') {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildByuRacingHTML();
+        initByuVideos();
       } else {
         contentInner.classList.remove('resume-view');
         contentInner.textContent = slug === DEFAULT_SLUG
@@ -981,6 +1112,14 @@
       if (contentInner.parentElement) contentInner.parentElement.scrollTop = 0;
       contentInner.classList.add('fade-in');
       contentInner.style.opacity = '1';
+
+      // Re-anchor the clipper beside the now-painted head photo. Without this it
+      // freezes wherever it landed on first load — and on mobile the photo
+      // reflows to the bottom of a tall page, so the clipper would otherwise sit
+      // over the content at the top. setTimeout(0) defers past this paint so the
+      // new content has laid out (and, on first load, past the clipper's own
+      // init). Guarded so a clipper the user has grabbed/moved is never yanked.
+      if (!hasUserMoved && !drag) setTimeout(positionClipperBesideHead, 0);
     }
 
     if (animate === false) {
