@@ -217,6 +217,76 @@
   }
   .about__gallery .about__img { margin: 0; }
 
+  /* ── Lucid Motors page (reuses .about__* + .entry__list bullets) ── */
+  /* the two portrait respirator selfies are tall; cap + center them so they
+     read smaller next to the landscape first shot */
+  .about__gallery .about__img--short {
+    width: auto;
+    max-width: 100%;
+    max-height: 150px;
+    justify-self: center;
+  }
+  .lucid__section {
+    font-weight: 900;
+    font-size: 17px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin: 34px 0 12px;
+  }
+  .lucid__duo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 8px 0 28px;
+  }
+  .lucid__duo .about__figure { margin: 0; }
+  .lucid__video {
+    border: 1px solid #000;
+    margin: 8px 0 8px;
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+  .lucid__video iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  .lucid__video-cap { margin: 0 0 28px; }
+  /* Opaque cover shown until the embed actually reaches PLAYING. If YouTube
+     refuses the inline embed (error 150/153 etc.) the cover simply stays, as a
+     clean clickable link — visitors never see YouTube's raw error box. */
+  .lucid__video-cover {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #000;
+    color: #fff;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .lucid__video-cover:hover { text-decoration: underline; }
+  .lucid__video-play {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    font-size: 15px;
+    padding-left: 3px; /* optically center the triangle */
+  }
+
   /* ── Right column ── */
   .right {
     border-left: 1px solid #000;
@@ -314,12 +384,11 @@
     100% { transform: translate(0, 0); }
   }
 
+  /* lives in the right sidebar by the photo/clippers so it never covers the
+     main content; right-aligned to match the name + photo column */
   .clipper-hint {
-    position: fixed;
-    z-index: 9998;
-    top: 250px;
-    left: calc(50vw - 90px);
     width: 200px;
+    margin: 16px 24px 0 auto;
     border: 1px solid #000;
     background: #fff;
     padding: 8px 10px;
@@ -386,11 +455,7 @@
       align-items: flex-end;
     }
 
-    .clipper-hint {
-      top: auto;
-      bottom: 16px;
-      left: 16px;
-    }
+    .clipper-hint { margin: 12px 16px 0 auto; }
     .clipper-container { top: 190px; } /* clear of the nav rows */
 
     /* inline PDF embedding is unreliable on phones/tablets: hide the embed,
@@ -401,6 +466,9 @@
     /* stack the closing gallery on narrow screens */
     .about__gallery { grid-template-columns: 1fr; }
     .about__gallery .about__img { margin: 0 0 18px; }
+
+    /* stack the Lucid scrappy/TRIS pair on narrow screens */
+    .lucid__duo { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -427,6 +495,7 @@
 
   <aside class="right">
     <div class="name">Landon<br>McNeil</div>
+    <div class="clipper-hint" id="clipperHint">&#8226; drag the clippers onto the hair to shave<br>&#8226; scroll to resize<br>&#8226; circle handle rotates, square resizes</div>
     <div class="photo-area">
       <span class="reset-link" id="resetLink">&#8634; reset</span>
       <div class="photo-wrapper" id="photoWrapper">
@@ -439,7 +508,6 @@
 </div>
 
 <!-- ── Clipper ── -->
-<div class="clipper-hint" id="clipperHint">&#8226; drag the clippers onto the hair to shave<br>&#8226; scroll to resize<br>&#8226; circle handle rotates, square resizes</div>
 <div class="clipper-container" id="clipper">
   <div class="handle rotate-handle" id="rotateHandle"></div>
   <div class="handle resize-handle" id="resizeHandle"></div>
@@ -674,6 +742,199 @@
     return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
   }
 
+  /* ── Lucid Motors content (Phase 4) ──
+     Transcribed from the Google Doc "Lucid Motors Page, Portfolio Website".
+     Reuses the .about__* prose styles and the .entry__list / .entry__sub bullet
+     language. Bulleted sections are modeled as a small node tree and rendered
+     recursively so the doc's 3-deep nesting comes through. Leaf text is trusted
+     HTML (pre-escaped via esc(), with the odd <strong>/<a> built explicitly). */
+  var LUCID_IMG = 'assets/lucid-motors/';
+
+  function lucidImg(file, alt, caption, cls) {
+    var img = '<img class="about__img' + (cls ? ' ' + cls : '') + '" src="' + esc(LUCID_IMG + file) + '" alt="' + esc(alt) + '" loading="lazy">';
+    if (!caption) return img;
+    return '<figure class="about__figure">' + img
+      + '<figcaption class="about__caption">' + esc(caption) + '</figcaption></figure>';
+  }
+  function b(text) { return '<strong>' + esc(text) + '</strong>'; }
+
+  // node: { html: <trusted>, kids: [node, …] }  → nested <ul> bullet tree
+  function lucidBullet(html, kids) { return { html: html, kids: kids || null }; }
+  function lucidList(nodes, top) {
+    var cls = top ? 'entry__list' : 'entry__sub';
+    var out = '<ul class="' + cls + '">';
+    nodes.forEach(function (n) {
+      out += '<li>' + n.html + (n.kids ? lucidList(n.kids, false) : '') + '</li>';
+    });
+    return out + '</ul>';
+  }
+  function lucidSection(title) { return '<h2 class="lucid__section">' + esc(title) + '</h2>'; }
+
+  function buildLucidMotorsHTML() {
+    var blocks = [];
+
+    blocks.push('<p class="about__intro">Lucid Motors</p>');
+    blocks.push('<p class="about__p">I am currently a Test Engineer on the High Voltage Build &amp; Test team, where I conduct battery testing ranging from the cell level up to full packs and vehicles. Below is a highlight of some of my favorite work I’ve done at Lucid.</p>');
+
+    // 1 — Pack-level
+    blocks.push(lucidSection('Pack-level thermal runaway propagation resistance testing'));
+    blocks.push(lucidList([
+      lucidBullet('I have led or played a crucial part in testing 10+ Lucid Motors battery packs.', [
+        lucidBullet('Now you may be thinking, “Only 10+...? Doesn’t seem like something to boast about…” but it IS (in my humble opinion).'),
+        lucidBullet('Each of these tests requires', [
+          lucidBullet(b('months') + ' of planning,'),
+          lucidBullet('involvement from teams across Prototype Build, Design, Systems, Software, and Testing,'),
+          lucidBullet('and can cost upwards of $100,000+ when all is said and done.')
+        ])
+      ]),
+      lucidBullet('100+ kWh battery packs'),
+      lucidBullet('~900V DC'),
+      lucidBullet('GB of data captured in each test and processed afterward in custom Python scripts'),
+      lucidBullet('Verifying battery pack’s conformance to regulations, resistance to thermal runaway, and validating design, software, and system architecture decisions.')
+    ], true));
+
+    blocks.push('<figure class="about__figure"><div class="about__gallery">'
+      + lucidImg('respirator-1.jpg', 'Landon wearing a respirator')
+      + lucidImg('respirator-2.jpg', 'Landon wearing a respirator', null, 'about__img--short')
+      + lucidImg('respirator-3.jpg', 'Landon wearing a respirator', null, 'about__img--short')
+      + '</div><figcaption class="about__caption">I can’t show you any pictures of my work, but here are some fun selfies of me in my trusty respirator.</figcaption></figure>');
+
+    blocks.push('<p class="about__p">This video is pretty close to the kind of work I do and shows the complexity and amount of effort that goes into one test: '
+      + aExt('https://youtu.be/kOz0ewP5fdM?si=L5K1DDrc9BDtfbI0', 'EV Fire Safety: Inside UL Research Institutes’ Training with Munro on Fighting EV Battery Fires.') + '</p>');
+
+    // 2 — Module-level
+    blocks.push(lucidSection('Module-level testing'));
+    blocks.push(lucidList([ lucidBullet('Overcharge'), lucidBullet('Overdischarge') ], true));
+
+    // 3 — Sub-module
+    blocks.push(lucidSection('Sub-module level testing'));
+    blocks.push(lucidList([
+      lucidBullet('I have helped design, build, and test several new forms of test articles that fall in a category that’s spicier than cell-level testing, but less spicy than a full module.'),
+      lucidBullet('For these tests I’ve utilized my skills in CATIA to create robust and reusable fixtures.')
+    ], true));
+
+    // 4 — Cell-level R100.05
+    blocks.push(lucidSection('Cell-level thermal runaway initiation process development for upcoming UNECE R100.05 regulatory requirements'));
+    blocks.push(lucidList([
+      lucidBullet('This design problem has been particularly fun to work on as it has dimensions in both software and hardware, with each dimension having many independent variables to tune.'),
+      lucidBullet('I designed a custom thermal PID control script paired with innovative instrumentation improvements in order to satisfy the stringent demands of the new regulations.')
+    ], true));
+
+    // 5 — ARC
+    blocks.push(lucidSection('Accelerating Rate Calorimetry (ARC) Testing'));
+    blocks.push(lucidList([ lucidBullet('Very science-y type of test at the cell level') ], true));
+
+    // 6 — Other cell-level
+    blocks.push(lucidSection('Other cell-level testing'));
+    blocks.push(lucidList([ lucidBullet('I have experience testing both NMC and LFP batteries in many other ways not listed here on my site.') ], true));
+
+    // 7 — Process & Equipment Development
+    blocks.push(lucidSection('Process and Equipment Development'));
+    blocks.push(lucidList([
+      lucidBullet('While at Lucid, I have developed some pretty sweet pieces of test equipment and improved a lot of the test processes my team follows regularly.'),
+      lucidBullet('One thing I made that I’m proud of is our traveling Thermal Runaway Initiation System (TRIS).', [
+        lucidBullet('The TRIS is essentially a comprehensive portable DAQ that took all of the scattered equipment we use for testing and consolidated it into a beautiful, easy-to-use package.')
+      ])
+    ], true));
+
+    blocks.push('<div class="lucid__duo">'
+      + lucidImg('test-setup-scrappy.jpg', 'A distributed, messy test setup before TRIS', 'An example of our distributed, messy test setup before TRIS')
+      + lucidImg('tris.jpg', 'The Thermal Runaway Initiation System (TRIS)', 'A glamour shot of the TRIS')
+      + '</div>');
+
+    // 8 — And More!
+    blocks.push(lucidSection('And More!'));
+    blocks.push(lucidList([
+      lucidBullet('At Lucid I’ve conducted a wide variety of tests and developed a wide variety of skills that I believe translate well to all other forms of testing.'),
+      lucidBullet('Testing at the level of rigor and quality that Lucid’s team expects has helped hone me into a ' + b('jack-of-all-trades hardware test engineer') + '.'),
+      lucidBullet('I’m confident I can tackle any challenge that comes my way.')
+    ], true));
+
+    // looping thermal-runaway clip (1:00–1:35), built by initLucidVideo() once in DOM
+    blocks.push('<div class="lucid__video"><div id="lucidVideoMount"></div>'
+      + '<a class="lucid__video-cover" id="lucidVideoCover" href="' + esc(LUCID_VIDEO_WATCH) + '" target="_blank" rel="noopener">'
+      + '<span class="lucid__video-play" aria-hidden="true">&#9654;</span><span>Watch on YouTube</span></a></div>'
+      + '<p class="about__caption lucid__video-cap">Video of battery thermal runaway from YouTube – NOT from Lucid Motors or my work</p>');
+
+    return '<div class="resume"><section class="about lucid">' + blocks.join('') + '</section></div>';
+  }
+
+  /* ── Looping YouTube segment (1:00–1:35) via the IFrame Player API ──
+     A plain iframe can't loop a sub-segment, so we drive it with the API: seek
+     back to 60s whenever playback passes 95s. Muted is required for autoplay. */
+  var LUCID_VIDEO_ID = 'Axlrx3qoIic';
+  var LUCID_VIDEO_WATCH = 'https://youtu.be/Axlrx3qoIic?t=60';
+  var LUCID_SEG_START = 60, LUCID_SEG_END = 95;
+  var lucidPlayer = null, lucidLoopTimer = null, lucidWatchdog = null, ytApiLoading = false;
+
+  function destroyLucidVideo() {
+    if (lucidLoopTimer) { clearInterval(lucidLoopTimer); lucidLoopTimer = null; }
+    if (lucidWatchdog) { clearTimeout(lucidWatchdog); lucidWatchdog = null; }
+    if (lucidPlayer) {
+      try { lucidPlayer.destroy(); } catch (e) {}
+      lucidPlayer = null;
+    }
+  }
+
+  function createLucidPlayer() {
+    var mount = document.getElementById('lucidVideoMount');
+    if (!mount || !window.YT || !window.YT.Player) return;
+    destroyLucidVideo();
+    var cover = document.getElementById('lucidVideoCover');
+    var started = false;
+    lucidPlayer = new YT.Player(mount, {
+      videoId: LUCID_VIDEO_ID,
+      playerVars: {
+        start: LUCID_SEG_START, autoplay: 1, mute: 1, controls: 1,
+        playsinline: 1, modestbranding: 1, rel: 0
+      },
+      events: {
+        onReady: function (e) {
+          e.target.mute();
+          e.target.seekTo(LUCID_SEG_START, true);
+          e.target.playVideo();
+          if (lucidLoopTimer) clearInterval(lucidLoopTimer);
+          lucidLoopTimer = setInterval(function () {
+            if (!lucidPlayer || !lucidPlayer.getCurrentTime) return;
+            var t = lucidPlayer.getCurrentTime();
+            if (t >= LUCID_SEG_END || t < LUCID_SEG_START - 1) {
+              lucidPlayer.seekTo(LUCID_SEG_START, true);
+            }
+          }, 250);
+        },
+        onStateChange: function (e) {
+          // PLAYING (1): the embed really works — uncover the inline player.
+          if (e.data === 1) { started = true; if (cover) cover.style.display = 'none'; }
+        }
+        // No onError DOM swap: error 153 doesn't reliably fire onError anyway,
+        // and the cover already hides YouTube's error box. The cover just stays.
+      }
+    });
+    // Watchdog: if the clip never starts (e.g. embedding refused), stop the
+    // retry loop. The cover link is already visible, so nothing else to do.
+    if (lucidWatchdog) clearTimeout(lucidWatchdog);
+    lucidWatchdog = setTimeout(function () {
+      if (started) return;
+      if (lucidLoopTimer) { clearInterval(lucidLoopTimer); lucidLoopTimer = null; }
+    }, 6000);
+  }
+
+  function initLucidVideo() {
+    if (window.YT && window.YT.Player) { createLucidPlayer(); return; }
+    // API not ready yet: register a one-shot callback and inject the script once.
+    var prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () {
+      if (typeof prev === 'function') prev();
+      createLucidPlayer();
+    };
+    if (!ytApiLoading) {
+      ytApiLoading = true;
+      var s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+    }
+  }
+
   function slugFromHash() {
     var s = (location.hash || '').replace(/^#/, '').toLowerCase();
     return tabsBySlug[s] ? s : DEFAULT_SLUG;
@@ -700,12 +961,17 @@
       : 'Landon McNeil — ' + tab;
 
     function paint() {
+      destroyLucidVideo(); // tear down the YT player whenever we (re)paint
       if (slug === 'resume') {
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildResumeHTML();
       } else if (slug === 'about') {
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildAboutHTML();
+      } else if (slug === 'lucid-motors') {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildLucidMotorsHTML();
+        initLucidVideo();
       } else {
         contentInner.classList.remove('resume-view');
         contentInner.textContent = slug === DEFAULT_SLUG
