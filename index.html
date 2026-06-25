@@ -342,6 +342,65 @@
   }
   .byu__video-cap { margin: 0 0 28px; }
 
+  /* Embedded Google Sheet (ElectroPuch BOM): bordered, full-width, fixed height,
+     with custom +/- zoom (the /preview embed has no native zoom). The iframe is
+     CSS-scaled inside a scrollable frame; width/height stay at 100/scale % so the
+     scaled content always fills the frame and stays responsive. */
+  .electropuch__zoom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+  }
+  .electropuch__zoom-btn {
+    font: inherit;
+    width: 30px;
+    height: 30px;
+    line-height: 1;
+    border: 1px solid #000;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .electropuch__zoom-btn:hover { background: #000; color: #fff; }
+  .electropuch__zoom-btn:disabled { opacity: 0.4; cursor: default; background: #fff; color: inherit; }
+  .electropuch__zoom-level { font-size: 14px; min-width: 46px; text-align: center; }
+  .electropuch__sheet-frame {
+    width: 100%;
+    height: 460px;
+    border: 1px solid #000;
+    overflow: auto;
+    margin: 0 0 28px;
+    background: #fff;
+  }
+  .electropuch__sheet {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    transform-origin: 0 0;
+  }
+
+  /* Click-to-expand image + its full-screen lightbox overlay. */
+  .electropuch__expandable { cursor: zoom-in; }
+  .electropuch__lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.88);
+    cursor: zoom-out;
+  }
+  .electropuch__lightbox.is-open { display: flex; }
+  .electropuch__lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: 0 0 0 1px #000;
+  }
+
   /* ── Right column ── */
   .right {
     border-left: 1px solid #000;
@@ -524,6 +583,9 @@
 
     /* stack the Lucid scrappy/TRIS pair on narrow screens */
     .lucid__duo { grid-template-columns: 1fr; }
+
+    /* shorter embedded BOM sheet on narrow screens */
+    .electropuch__sheet-frame { height: 360px; }
   }
 </style>
 </head>
@@ -986,6 +1048,117 @@
     });
   }
 
+  /* ── ElectroPuch content ──
+     Transcribed from the Google Doc "ElectroPuch, Portfolio Page". Reuses the
+     .about__* prose styles. The 4-minute build video uses the same click-to-load
+     facade as BYU (class .byu__video, wired by initByuVideos), and the planned
+     Bill of Materials is embedded as a read-only Google Sheets iframe. */
+  var ELECTRO_IMG = 'assets/electropuch/';
+  var ELECTRO_BOM_ID = '1Xt8H6ORpZyeygGJCQ_Ir3jauaX_Wz7NpmNCZVcAD4Z8';
+
+  function electroImg(file, alt, caption, cls) {
+    var img = '<img class="about__img' + (cls ? ' ' + cls : '') + '" src="' + esc(ELECTRO_IMG + file) + '" alt="' + esc(alt) + '" loading="lazy">';
+    if (!caption) return img;
+    return '<figure class="about__figure">' + img
+      + '<figcaption class="about__caption">' + esc(caption) + '</figcaption></figure>';
+  }
+
+  function buildElectroPuchHTML() {
+    var blocks = [];
+
+    blocks.push('<p class="about__intro">ElectroPuch</p>');
+
+    blocks.push('<p class="about__p">In 2024 I converted my family’s dilapidated 1978 Puch Maxi from its 49cc two-stroke engine into a battery-powered “ElectroPuch.”</p>');
+
+    blocks.push('<p class="about__p">As with any good personal side quest, it cost more than I thought it would, took longer than it should have, and required a serious amount of Jerry-rigging and MacGyvering.</p>');
+
+    blocks.push('<p class="about__p">Enjoy this 4-minute build ASMR video I made about it!</p>');
+
+    // 4-minute build video — click-to-load facade (reuses .byu__video, initByuVideos)
+    blocks.push('<figure class="about__figure">'
+      + '<div class="byu__video" data-yt="iFNjjl38OW8" role="button" tabindex="0" aria-label="Play ElectroPuch build video">'
+      + '<img class="byu__video-poster" src="' + esc(ELECTRO_IMG + 'puch-thumbnail.jpg') + '" alt="ElectroPuch build video thumbnail" loading="lazy">'
+      + '<span class="byu__video-play" aria-hidden="true">&#9654;</span>'
+      + '</div></figure>');
+
+    blocks.push('<p class="about__p">For the interested viewer, here is a link to the '
+      + aExt('https://docs.google.com/spreadsheets/d/' + ELECTRO_BOM_ID + '/edit?usp=sharing', 'Bill of Materials')
+      + ' I planned out before embarking on the endeavor. I didn’t end up purchasing everything on it, so the project was slightly cheaper than shown on the BOM.</p>');
+
+    blocks.push('<div class="electropuch__zoom" role="group" aria-label="Spreadsheet zoom">'
+      + '<button type="button" class="electropuch__zoom-btn" data-zoom="out" aria-label="Zoom out">&minus;</button>'
+      + '<span class="electropuch__zoom-level">100%</span>'
+      + '<button type="button" class="electropuch__zoom-btn" data-zoom="in" aria-label="Zoom in">+</button>'
+      + '</div>'
+      + '<div class="electropuch__sheet-frame">'
+      + '<iframe class="electropuch__sheet" src="https://docs.google.com/spreadsheets/d/' + esc(ELECTRO_BOM_ID) + '/preview" title="ElectroPuch Bill of Materials" loading="lazy"></iframe>'
+      + '</div>');
+
+    blocks.push(electroImg('puch-schematic.jpg', 'Schematic Landon created for the ElectroPuch', 'This is the schematic I created for the ElectroPuch (click to expand)', 'electropuch__expandable'));
+
+    blocks.push(electroImg('me-on-the-puch.jpg', 'Landon sitting on the finished ElectroPuch', 'The tired joy of a quest coming to a close'));
+
+    // Full-screen overlay for click-to-expand images (filled in by initElectroLightbox).
+    blocks.push('<div class="electropuch__lightbox" id="electroLightbox" aria-hidden="true"><img src="" alt=""></div>');
+
+    return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
+  }
+
+  // Wire +/- zoom on the embedded BOM sheet. CSS-scales the iframe (transform)
+  // while keeping its width/height at 100/scale % so the scaled content fills the
+  // scrollable frame at every zoom level. Clamped to 50%–200% in 25% steps.
+  function initElectroSheetZoom() {
+    var wrap = document.querySelector('.electropuch__zoom');
+    var iframe = document.querySelector('.electropuch__sheet');
+    if (!wrap || !iframe) return;
+    var label = wrap.querySelector('.electropuch__zoom-level');
+    var out = wrap.querySelector('[data-zoom="out"]');
+    var inn = wrap.querySelector('[data-zoom="in"]');
+    var MIN = 0.5, MAX = 2, STEP = 0.25, scale = 1;
+    function apply() {
+      iframe.style.width = (100 / scale) + '%';
+      iframe.style.height = (100 / scale) + '%';
+      iframe.style.transform = 'scale(' + scale + ')';
+      label.textContent = Math.round(scale * 100) + '%';
+      out.disabled = scale <= MIN + 1e-9;
+      inn.disabled = scale >= MAX - 1e-9;
+    }
+    wrap.addEventListener('click', function (e) {
+      var btn = e.target.closest('.electropuch__zoom-btn');
+      if (!btn) return;
+      scale = Math.min(MAX, Math.max(MIN, scale + (btn.getAttribute('data-zoom') === 'in' ? STEP : -STEP)));
+      apply();
+    });
+    apply();
+  }
+
+  // Click any .electropuch__expandable image to open it full-screen in the
+  // lightbox overlay; click the overlay or press Escape to close. The Escape
+  // listener is added on open and removed on close so nothing leaks across visits.
+  function initElectroLightbox() {
+    var box = document.getElementById('electroLightbox');
+    if (!box) return;
+    var boxImg = box.querySelector('img');
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    function open(src, alt) {
+      boxImg.src = src;
+      boxImg.alt = alt || '';
+      box.classList.add('is-open');
+      box.setAttribute('aria-hidden', 'false');
+      document.addEventListener('keydown', onKey);
+    }
+    function close() {
+      box.classList.remove('is-open');
+      box.setAttribute('aria-hidden', 'true');
+      boxImg.removeAttribute('src');
+      document.removeEventListener('keydown', onKey);
+    }
+    box.addEventListener('click', close);
+    document.querySelectorAll('.electropuch__expandable').forEach(function (im) {
+      im.addEventListener('click', function () { open(im.getAttribute('src'), im.getAttribute('alt')); });
+    });
+  }
+
   /* ── Looping YouTube segment (1:00–1:35) via the IFrame Player API ──
      A plain iframe can't loop a sub-segment, so we drive it with the API: seek
      back to 60s whenever playback passes 95s. Muted is required for autoplay. */
@@ -1103,6 +1276,12 @@
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildByuRacingHTML();
         initByuVideos();
+      } else if (slug === 'electropuch') {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildElectroPuchHTML();
+        initByuVideos();
+        initElectroSheetZoom();
+        initElectroLightbox();
       } else {
         contentInner.classList.remove('resume-view');
         contentInner.textContent = slug === DEFAULT_SLUG
