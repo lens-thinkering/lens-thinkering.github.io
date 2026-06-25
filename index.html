@@ -570,7 +570,9 @@
     }
 
     .clipper-hint { margin: 12px 16px 0 auto; }
-    .clipper-container { top: 190px; } /* clear of the nav rows */
+    /* document-relative so it can rest beside the photo at the bottom of the
+       stacked page (a fixed clipper can't follow below-the-fold content) */
+    .clipper-container { position: absolute; top: 190px; }
 
     /* inline PDF embedding is unreliable on phones/tablets: hide the embed,
        lean on the Open / Download card affordances instead */
@@ -1560,8 +1562,13 @@
     var pad = 4;
     if (rect.left < pad)              t.x += pad - rect.left;
     if (rect.right > vw - pad)        t.x -= rect.right - (vw - pad);
-    if (rect.top < pad)              t.y += pad - rect.top;
-    if (rect.bottom > vh - pad)      t.y -= rect.bottom - (vh - pad);
+    // On the stacked layout the photo lives below the fold, so the clipper is
+    // meant to sit beside it down the page (it scrolls with the document there);
+    // only clamp vertically into the viewport on the fixed desktop layout.
+    if (!window.matchMedia('(max-width: 900px)').matches) {
+      if (rect.top < pad)            t.y += pad - rect.top;
+      if (rect.bottom > vh - pad)    t.y -= rect.bottom - (vh - pad);
+    }
     applyTransform();
   }
 
