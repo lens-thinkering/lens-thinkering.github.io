@@ -1161,6 +1161,103 @@
     });
   }
 
+  /* ── SO-101 content ──
+     Transcribed from the Google Doc "SO-101 Page, Portfolio Website". Reuses the
+     .about__* prose styles, the .lucid__duo side-by-side, the BYU click-to-load
+     YouTube facade (.byu__video, wired by initByuVideos) for the two Shorts, the
+     ElectroPuch click-to-expand lightbox for the two detail diagrams, and the
+     ElectroPuch embedded/zoomable Google Sheet for the project Bill of Materials. */
+  var SO101_IMG = 'assets/so-101/';
+  var SO101_BOM_ID = '1IBCxe6GiMJHTE1EAGJMHUUD7D93n5WzJKhQWxkrHyzg';
+
+  function so101Img(file, alt, caption, cls) {
+    var img = '<img class="about__img' + (cls ? ' ' + cls : '') + '" src="' + esc(SO101_IMG + file) + '" alt="' + esc(alt) + '" loading="lazy">';
+    if (!caption) return img;
+    return '<figure class="about__figure">' + img
+      + '<figcaption class="about__caption">' + esc(caption) + '</figcaption></figure>';
+  }
+
+  // Portrait YouTube Short via the BYU click-to-load facade: poster + play button,
+  // iframe swapped in on first click (see initByuVideos).
+  function so101Short(id, poster, alt, caption) {
+    return '<figure class="about__figure">'
+      + '<div class="byu__video byu__video--portrait" data-yt="' + esc(id) + '" role="button" tabindex="0" aria-label="Play video">'
+      + '<img class="byu__video-poster" src="' + esc(SO101_IMG + poster) + '" alt="' + esc(alt) + '" loading="lazy">'
+      + '<span class="byu__video-play" aria-hidden="true">&#9654;</span>'
+      + '</div>'
+      + (caption ? '<figcaption class="about__caption byu__video-cap">' + esc(caption) + '</figcaption>' : '')
+      + '</figure>';
+  }
+
+  function buildSo101HTML() {
+    var blocks = [];
+
+    blocks.push('<p class="about__intro">SO-101 — AI and Robotics Project</p>');
+
+    blocks.push('<p class="about__p">For the past year I have developed a persistent obsession with robotics. Especially robotics in the new sense–the “woo-woo A.I.” sense.</p>');
+
+    blocks.push('<p class="about__p">While classical robotics is very cool, I honestly can’t stop thinking about the '
+      + aExt('https://www.avikde.me/p/the-first-paradigm-in-robotics-and', 'new wave') + ' that is happening in robotics right now.</p>');
+
+    blocks.push('<p class="about__p">When I came across Mr. Benjie Holson’s “gauntlet throw” to the roboticists of the world in his Substack post, '
+      + aExt('https://generalrobots.substack.com/p/benjies-humanoid-olympic-games', 'Benjie&#39;s Humanoid Olympic Games')
+      + ', the effect it had on me was akin to somebody throwing gas on a small flame surrounded by a mountain of kindling. My brain chemistry altered, a switch flipped, etc. etc.</p>');
+
+    blocks.push('<p class="about__p">I immediately devoured every single one of '
+      + aExt('https://www.pi.website/blog', 'Physical Intelligence’s blog posts') + ' (G.O.A.T. blog), and have been reading and listening to every resource I can find. Hundreds of hours of content later, and I still can’t get enough!</p>');
+
+    blocks.push('<p class="about__p">I decided early on in my descent into the depths of robotics that I needed to get my feet wet ASAP, and build a robot of my own. The '
+      + aExt('https://huggingface.co/docs/lerobot/so101', 'SO-101') + ' from Hugging Face rose to the surface as the most budget-friendly option and I’ve had a blast building my own over the past several months.</p>');
+
+    blocks.push('<p class="about__p">Here’s a video of my setup for anyone unfamiliar with the SO-101 open source project:</p>');
+    blocks.push(so101Short('Hh9JxdCBKws', 'teleop-poster.jpg', 'Demo teleoperating the SO-101 setup',
+      'Demo teleoperating the SO-101 setup'));
+
+    blocks.push(lucidSection('Project Overview'));
+
+    blocks.push('<div class="lucid__duo">'
+      + so101Img('leader.jpg', 'The SO-101 leader arm', 'Leader')
+      + so101Img('follower.jpg', 'The SO-101 follower arm', 'Follower')
+      + '</div>');
+
+    blocks.push(so101Img('hardware-layer.png', 'Diagram describing the hardware used in my SO-101 setup',
+      'Diagram describing hardware used in my setup (click to expand)', 'electropuch__expandable'));
+
+    blocks.push('<p class="about__p">I wanted to run the robot off of a Raspberry Pi so I could beef up my Linux skills and it felt closer to a real robot deployment to run off a mini computer.</p>');
+
+    blocks.push(so101Img('pipeline.png', 'My SO-101 project pipeline as of June 10, 2026',
+      'Project pipeline as of 06/10/26 (click to expand)', 'electropuch__expandable'));
+
+    blocks.push('<p class="about__p">After getting teleoperation up and running, I recorded 50 examples of me picking up the blue block and putting it in the basket (cool dataset visualization '
+      + aExt('https://huggingface.co/spaces/lerobot/visualize_dataset?path=%2Fl-e-n%2Fso101_pick_place_50-merged%2Fepisode_0', 'here')
+      + ' on Hugging Face). Then using Google Colab, I rented some space on a GPU and trained an '
+      + aExt('https://huggingface.co/docs/lerobot/en/act', 'ACT Policy') + ' using my data.</p>');
+
+    blocks.push('<p class="about__p">Aaannddd after trying out my shiny robot policy…I need more data and my Raspberry Pi’s CPU is not juicy enough to run inference.</p>');
+
+    blocks.push(so101Short('6ffo0CqP_ek', 'act-policy-poster.jpg',
+      'Deploying my first ACT policy on the SO-101',
+      'After training an ACT policy for several hours on my 50-sample dataset, deployment of the policy didn’t go too well…'));
+
+    blocks.push('<p class="about__p">BOM for the project:</p>');
+    blocks.push('<div class="electropuch__zoom" role="group" aria-label="Spreadsheet zoom">'
+      + '<button type="button" class="electropuch__zoom-btn" data-zoom="out" aria-label="Zoom out">&minus;</button>'
+      + '<span class="electropuch__zoom-level">100%</span>'
+      + '<button type="button" class="electropuch__zoom-btn" data-zoom="in" aria-label="Zoom in">+</button>'
+      + '</div>'
+      + '<div class="electropuch__sheet-frame">'
+      + '<iframe class="electropuch__sheet" src="https://docs.google.com/spreadsheets/d/' + esc(SO101_BOM_ID) + '/preview" title="SO-101 Bill of Materials" loading="lazy"></iframe>'
+      + '</div>');
+
+    blocks.push('<p class="about__p">Like I said about my ' + aInt('electropuch', 'ElectroPuch project')
+      + ', “As with any good personal side quest, it cost more than I thought it would, took longer than it should have, and required a serious amount of Jerry-rigging and MacGyvering.”</p>');
+
+    // Full-screen overlay for the click-to-expand diagrams (filled by initElectroLightbox).
+    blocks.push('<div class="electropuch__lightbox" id="electroLightbox" aria-hidden="true"><img src="" alt=""></div>');
+
+    return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
+  }
+
   /* ── Looping YouTube segment (1:00–1:35) via the IFrame Player API ──
      A plain iframe can't loop a sub-segment, so we drive it with the API: seek
      back to 60s whenever playback passes 95s. Muted is required for autoplay. */
@@ -1281,6 +1378,12 @@
       } else if (slug === 'electropuch') {
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildElectroPuchHTML();
+        initByuVideos();
+        initElectroSheetZoom();
+        initElectroLightbox();
+      } else if (slug === 'so-101') {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildSo101HTML();
         initByuVideos();
         initElectroSheetZoom();
         initElectroLightbox();
