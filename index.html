@@ -1408,13 +1408,17 @@
       contentInner.classList.add('fade-in');
       contentInner.style.opacity = '1';
 
-      // Re-anchor the clipper beside the now-painted head photo. Without this it
-      // freezes wherever it landed on first load — and on mobile the photo
-      // reflows to the bottom of a tall page, so the clipper would otherwise sit
-      // over the content at the top. setTimeout(0) defers past this paint so the
+      // Re-anchor the clipper beside the now-painted head photo on every page.
+      // Each navigation is a fresh start: clear hasUserMoved so the clipper
+      // always returns to the photo, even if the user dragged it on the previous
+      // page (and so the post-load ResizeObserver/load re-anchors fire for the
+      // new page's settling media). setTimeout(0) defers past this paint so the
       // new content has laid out (and, on first load, past the clipper's own
-      // init). Guarded so a clipper the user has grabbed/moved is never yanked.
-      if (!hasUserMoved && !drag) setTimeout(positionClipperBesideHead, 0);
+      // init). Skipped only if a drag is literally in progress.
+      if (!drag) {
+        hasUserMoved = false;
+        setTimeout(positionClipperBesideHead, 0);
+      }
     }
 
     if (animate === false) {
