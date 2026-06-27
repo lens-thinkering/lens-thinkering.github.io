@@ -538,12 +538,22 @@
 
   /* ── stacked layout for tablets and phones ── */
   @media (max-width: 900px) {
-    html, body { overflow-y: auto; overflow-x: hidden; }
+    /* Scroll as a normal document, not the fixed 100vh app-shell the desktop
+       layout uses. The base rule pins html/body to height:100% with
+       overflow:hidden; if we only flip overflow (and leave height:100%), the
+       body stays locked to one viewport while content overflows it, creating a
+       fragile body-level scroll. The absolutely-positioned clipper (anchored to
+       the document) then can't track that scroll and ends up unreachable beside
+       the bottom photo, and a ResizeObserver on body never fires because body's
+       box never grows. height:auto lets the page flow and scroll normally. */
+    html, body { height: auto; min-height: 100%; overflow-y: auto; overflow-x: hidden; }
 
     .shell {
       display: block;
       height: auto;
     }
+    /* no nested scroll context on mobile — the whole document scrolls */
+    .content { overflow: visible; }
     .nav {
       border-right: none;
       border-bottom: 1px solid #000;
