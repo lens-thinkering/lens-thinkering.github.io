@@ -1416,20 +1416,25 @@
     }
   }
 
-  // Clicks update the hash only; hashchange does the activation (no double work).
-  // Setting location.hash to a slug that is NOT an element id => no scroll jump.
+  // Clicks update the URL for deep-linking/back-button AND activate directly.
+  // We can't rely on the hashchange event alone: embedded preview panels and
+  // other sandboxed iframes often don't fire hashchange, which would leave every
+  // non-Home tab dead (Home worked only because it activated directly). Calling
+  // activateTab here is safe — it's idempotent (no-ops when slug is already
+  // current), so the hashchange listener below just becomes a no-op when it fires.
   navList.addEventListener('click', function (e) {
     var li = e.target.closest('li');
     if (!li) return;
     var slug = li.dataset.slug;
     if (slug === currentSlug) return;
     if (slug === DEFAULT_SLUG) {
-      // keep the URL clean for the default tab, but still re-sync
+      // keep the URL clean for the default tab
       history.pushState(null, '', location.pathname + location.search);
-      activateTab(slug, true);
     } else {
+      // setting a hash that isn't an element id => no scroll jump
       location.hash = slug;
     }
+    activateTab(slug, true);
   });
 
   // Roving-tabindex keyboard support across the tablist.
@@ -1780,10 +1785,31 @@
   // first paint: anchor beside the head once layout has settled
   requestAnimationFrame(positionClipperBesideHead);
 
+  // Re-anchor without yanking a clipper the user has grabbed. rAF-debounced so a
+  // burst of layout changes collapses into one reposition per frame.
+  var anchorPending = false;
+  function reanchor() {
+    if (hasUserMoved || drag || anchorPending) return;
+    anchorPending = true;
+    requestAnimationFrame(function () {
+      anchorPending = false;
+      if (!hasUserMoved && !drag) positionClipperBesideHead();
+    });
+  }
+
   // re-anchor on resize/orientation change, but never yank it from the user
-  window.addEventListener('resize', function () {
-    if (!hasUserMoved && !drag) positionClipperBesideHead();
-  });
+  window.addEventListener('resize', reanchor);
+
+  // Lazy-loaded media (videos, iframes, images) finish after first paint and
+  // grow the page, pushing the bottom photo down — especially on the stacked
+  // mobile layout. Without re-anchoring, the clipper stays pinned to the photo's
+  // earlier, higher position and ends up stranded in empty space (only appearing
+  // once a tap/scroll forces a reflow). Watch the document height settle and
+  // re-anchor each time, plus once more after every resource has loaded.
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(reanchor).observe(document.body);
+  }
+  window.addEventListener('load', reanchor);
 })();
 </script>
 </body>
