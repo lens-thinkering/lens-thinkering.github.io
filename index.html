@@ -193,6 +193,11 @@
   }
   .about__p a { color: #1a56db; text-decoration: underline; }
   .about__p a:hover { color: #1e40af; }
+  .about__rule {
+    border: none;
+    border-top: 1px solid #000;
+    margin: 0 0 24px;
+  }
   .about__figure {
     margin: 8px 0 28px;
   }
@@ -613,7 +618,7 @@
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Lucid Motors" data-slug="lucid-motors">Lucid Motors</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="BYU Racing FSAE" data-slug="byu-racing">BYU Racing FSAE</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="SO-101" data-slug="so-101">SO-101</li>
-      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="B&amp;K PSU MCP" data-slug="bk-psu-mcp">B&amp;K PSU MCP</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="BK Precision MCP" data-slug="bk-psu-mcp">BK Precision MCP</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="ElectroPuch" data-slug="electropuch">ElectroPuch</li>
     </ul>
   </nav>
@@ -1269,6 +1274,47 @@
     return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
   }
 
+  /* ── BK Precision MCP content ──
+     Transcribed from the Google Doc "BK Precision Power Supply MCP Page,
+     Portfolio Website". A short prose page with one portrait YouTube Short demo,
+     embedded via the same click-to-load facade as BYU/SO-101 (initByuVideos). */
+  var BKMCP_IMG = 'assets/bk-psu-mcp/';
+
+  function buildBkPsuHTML() {
+    var blocks = [];
+
+    blocks.push('<p class="about__intro">BK Precision Power Supply MCP</p>');
+
+    blocks.push('<p class="about__p">Link to project repo: '
+      + aExt('https://github.com/lens-thinkering/BK-Precision-PowerSupply-MCP',
+          'https://github.com/lens-thinkering/BK-Precision-PowerSupply-MCP')
+      + '</p>');
+
+    blocks.push('<hr class="about__rule">');
+
+    blocks.push('<p class="about__p">In April 2026 I came across a post about an “'
+      + aExt('https://github.com/beriberikix/awesome-mcp-hardware',
+          'awesome list of MCP servers & clients for interacting with hardware and the physical world')
+      + ',”</p>');
+
+    blocks.push('<p class="about__p">Inspired by that, Claude and I made a MCP server that lets AI agents connect to and control BK Precision programmable power supplies.</p>');
+
+    blocks.push('<p class="about__p">Not sure what it’ll be useful for, but it’s definitely cool!</p>');
+
+    // Portrait YouTube Short demo — click-to-load facade (reuses .byu__video, initByuVideos)
+    blocks.push('<figure class="about__figure">'
+      + '<div class="byu__video byu__video--portrait" data-yt="OQT77CyB038" role="button" tabindex="0" aria-label="Play BK Precision MCP demo video">'
+      + '<img class="byu__video-poster" src="' + esc(BKMCP_IMG + 'demo-poster.jpg') + '" alt="The BK-9103 power supply lighting an LED, controlled by an AI agent" loading="lazy">'
+      + '<span class="byu__video-play" aria-hidden="true">&#9654;</span>'
+      + '</div>'
+      + '<figcaption class="about__caption byu__video-cap">The video is best viewed on mobile, but it shows a demo I made where I connected my laptop to a BK-9103 power supply and the power supply to a LED, then I had the BK-9103 turn the LED on and off.</figcaption>'
+      + '</figure>');
+
+    blocks.push('<p class="about__p">I tried to design the MCP so it would work with all programmable BK Precision power supplies, but so far I’ve only tested it with the BK-9103, 1685B, 9115B, and the PVS10005.</p>');
+
+    return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
+  }
+
   /* ── Looping YouTube segment (1:00–1:35) via the IFrame Player API ──
      A plain iframe can't loop a sub-segment, so we drive it with the API: seek
      back to 60s whenever playback passes 95s. Muted is required for autoplay. */
@@ -1398,6 +1444,10 @@
         initByuVideos();
         initElectroSheetZoom();
         initElectroLightbox();
+      } else if (slug === 'bk-psu-mcp') {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildBkPsuHTML();
+        initByuVideos();
       } else {
         contentInner.classList.remove('resume-view');
         contentInner.textContent = slug === DEFAULT_SLUG
