@@ -123,6 +123,10 @@
     line-height: 1.6;
   }
 
+  /* profile links */
+  .resume__links { margin-bottom: 64px; }
+  .resume__links .resume__actions { margin-bottom: 0; }
+
   /* high-signal entries */
   .resume__section-title { margin-bottom: 28px; }
   .entry { margin-bottom: 44px; }
@@ -783,6 +787,15 @@
       + '<object class="resume__embed" data="' + esc(RESUME_PDF) + '#view=FitH" type="application/pdf" aria-label="Resume PDF preview">'
       + '<p class="resume__embed-fallback">Your browser can’t show the PDF here — use Open or Download above.</p>'
       + '</object>'
+      + '</section>';
+
+    // profile links
+    html += '<section class="resume__links">'
+      + '<h2 class="resume__section-title">Connect</h2>'
+      + '<div class="resume__actions">'
+      + '<a class="resume__btn" href="https://www.linkedin.com/in/landonmcneil000" target="_blank" rel="noopener">LinkedIn ↗</a>'
+      + '<a class="resume__btn" href="https://github.com/lens-thinkering" target="_blank" rel="noopener">GitHub ↗</a>'
+      + '</div>'
       + '</section>';
 
     // high-signal entries
