@@ -250,14 +250,32 @@
   }
   .lucid__duo .about__figure { margin: 0; }
 
-  /* ── Highlights (landing page) ── */
-  .lucid__section a { color: inherit; }
-  .hl__img-link { display: block; color: inherit; text-decoration: none; }
-  .hl__img--portrait {
-    max-width: 340px;
-    margin-left: auto;
-    margin-right: auto;
+  /* ── Highlights (landing page) ──
+     2-col card grid: uniform 4:3 image crops so portrait and landscape shots
+     sit at the same size, title + short pitch below each. */
+  .hl__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 16px;
+    margin: 8px 0 28px;
   }
+  .hl__img-link { display: block; color: inherit; text-decoration: none; }
+  .hl__card .about__img {
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    margin: 0;
+  }
+  .hl__title {
+    font-weight: 900;
+    font-size: 15px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin: 10px 0 4px;
+  }
+  .hl__title a { color: inherit; }
+  .hl__pitch { font-size: 13px; line-height: 1.5; margin: 0; }
+  .hl__pitch a { color: #1a56db; text-decoration: underline; }
+  .hl__pitch a:hover { color: #1e40af; }
   .lucid__video {
     border: 1px solid #000;
     margin: 8px 0 8px;
@@ -616,6 +634,9 @@
     /* stack the closing gallery on narrow screens */
     .about__gallery { grid-template-columns: 1fr; }
     .about__gallery .about__img { margin: 0 0 18px; }
+
+    /* stack the highlights cards on narrow screens */
+    .hl__grid { grid-template-columns: 1fr; }
 
     /* stack the Lucid scrappy/TRIS pair on narrow screens */
     .lucid__duo { grid-template-columns: 1fr; }
@@ -1344,14 +1365,16 @@
   }
 
   /* ── Highlights (landing page) ──
-     Image-heavy best-of shown on the default tab: one block per project — a
-     favorite shot, a one-sentence pitch, and a link to the full page. Reuses
-     the .about__* prose styles and each page's image helper; the heading and
-     the image both link to the project so a click anywhere goes deeper. */
-  function hlBlock(slug, title, mediaHtml, pitchHtml) {
-    return '<h2 class="lucid__section"><a href="#' + esc(slug) + '">' + esc(title) + '</a></h2>'
-      + '<a class="hl__img-link" href="#' + esc(slug) + '" aria-label="' + esc(title) + '">' + mediaHtml + '</a>'
-      + '<p class="about__p">' + pitchHtml + ' ' + aInt(slug, 'Full story →') + '</p>';
+     Image-heavy best-of shown on the default tab: a 2-col grid of cards, one
+     per project — a favorite shot (uniform 4:3 crop), title, and a short
+     pitch. Reuses each page's image helper; the image and title both link to
+     the project so a click anywhere goes deeper. */
+  function hlCard(slug, title, imgHtml, pitchHtml) {
+    return '<div class="hl__card">'
+      + '<a class="hl__img-link" href="#' + esc(slug) + '" aria-label="' + esc(title) + '">' + imgHtml + '</a>'
+      + '<h2 class="hl__title"><a href="#' + esc(slug) + '">' + esc(title) + '</a></h2>'
+      + '<p class="hl__pitch">' + pitchHtml + ' ' + aInt(slug, 'Full story →') + '</p>'
+      + '</div>';
   }
 
   function buildHighlightsHTML() {
@@ -1360,28 +1383,29 @@
     blocks.push('<p class="about__intro">Welcome!</p>');
     blocks.push('<p class="about__p">I’m Landon McNeil — a test engineer who builds things across the electrical/mechanical/software divide. Here’s the short version of my favorite work; click any picture (or the tabs on the left) for the full story.</p>');
 
-    blocks.push(hlBlock('lucid-motors', 'Lucid Motors',
-      lucidImg('tris.jpg', 'The Thermal Runaway Initiation System built at Lucid Motors'),
-      'I’m a Test Engineer on the High Voltage Build &amp; Test team, where I’ve led pack-level thermal runaway propagation testing on 10+ battery packs and design custom test hardware like this Thermal Runaway Initiation System.'));
+    blocks.push('<div class="hl__grid">'
 
-    blocks.push(hlBlock('so-101', 'SO-101 Robotic Arm',
-      '<div class="lucid__duo">'
-      + so101Img('leader.jpg', 'The SO-101 leader arm', 'Leader')
-      + so101Img('follower.jpg', 'The SO-101 follower arm', 'Follower')
-      + '</div>',
-      'My home AI-robotics project: I built a leader/follower SO-101 arm pair, recorded my own teleoperation dataset, and trained an ACT imitation-learning policy to run it.'));
+      + hlCard('lucid-motors', 'Lucid Motors',
+        lucidImg('tris.jpg', 'The Thermal Runaway Initiation System built at Lucid Motors'),
+        'Test Engineer on the High Voltage Build &amp; Test team — pack-level thermal runaway testing and custom test hardware like this Thermal Runaway Initiation System.')
 
-    blocks.push(hlBlock('byu-racing', 'BYU Racing',
-      byuImg('seniors.jpg', 'BYU Racing seniors with the car'),
-      'I helped found BYU’s first Formula Student EV team and led the High Voltage and Battery teams that took the school’s first all-electric racecar to competition in 2024.'));
+      + hlCard('so-101', 'SO-101 Robotic Arm',
+        so101Img('follower.jpg', 'The SO-101 follower arm'),
+        'My home AI-robotics project: a leader/follower arm pair, my own teleoperation dataset, and a trained ACT imitation-learning policy.')
 
-    blocks.push(hlBlock('bk-psu-mcp', 'Power Supply MCP Server',
-      '<img class="about__img hl__img--portrait" src="' + esc(BKMCP_IMG + 'demo-poster.jpg') + '" alt="A BK-9103 power supply lighting an LED, controlled by an AI agent" loading="lazy">',
-      'An MCP server I built (with Claude) that lets AI agents connect to and control BK Precision programmable bench power supplies.'));
+      + hlCard('byu-racing', 'BYU Racing',
+        byuImg('seniors.jpg', 'BYU Racing seniors with the car'),
+        'Helped found BYU’s first Formula Student EV team and led the High Voltage and Battery teams to competition in 2024.')
 
-    blocks.push(hlBlock('electropuch', 'Retro Moped EV Conversion',
-      electroImg('me-on-the-puch.jpg', 'Landon on the finished ElectroPuch'),
-      'I converted my family’s 1978 Puch Maxi moped from its 49cc two-stroke engine to a battery-electric drivetrain — the “ElectroPuch” — and made a 4-minute build video about it.'));
+      + hlCard('bk-psu-mcp', 'Power Supply MCP Server',
+        '<img class="about__img" src="' + esc(BKMCP_IMG + 'demo-poster.jpg') + '" alt="A BK-9103 power supply lighting an LED, controlled by an AI agent" loading="lazy">',
+        'An MCP server that lets AI agents connect to and control BK Precision programmable bench power supplies.')
+
+      + hlCard('electropuch', 'Retro Moped EV Conversion',
+        electroImg('me-on-the-puch.jpg', 'Landon on the finished ElectroPuch'),
+        'Converted my family’s 1978 Puch Maxi from its 49cc two-stroke to a battery-electric drivetrain — the “ElectroPuch.”')
+
+      + '</div>');
 
     return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
   }
