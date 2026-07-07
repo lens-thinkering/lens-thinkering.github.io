@@ -249,6 +249,15 @@
     margin: 8px 0 28px;
   }
   .lucid__duo .about__figure { margin: 0; }
+
+  /* ── Highlights (landing page) ── */
+  .lucid__section a { color: inherit; }
+  .hl__img-link { display: block; color: inherit; text-decoration: none; }
+  .hl__img--portrait {
+    max-width: 340px;
+    margin-left: auto;
+    margin-right: auto;
+  }
   .lucid__video {
     border: 1px solid #000;
     margin: 8px 0 8px;
@@ -460,8 +469,11 @@
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
-    top: 80px;
-    left: calc(50vw - 30px);
+    /* base position approximates where positionClipperBesideHead() lands
+       (teeth just left of the head), so the clipper never flashes mid-screen
+       before the JS anchors it and sits by the photo even without JS */
+    bottom: 277px;
+    right: 260px;
     width: 60px;
     height: 150px;
     transform-origin: center center;
@@ -507,11 +519,12 @@
     100% { transform: translate(0, 0); }
   }
 
-  /* lives in the right sidebar by the photo/clippers so it never covers the
-     main content; right-aligned to match the name + photo column */
+  /* lives inside the photo area, directly above the picture, so the hint and
+     the clippers both greet the visitor in the same corner; right-aligned to
+     match the name + photo column */
   .clipper-hint {
     width: 200px;
-    margin: 16px 24px 0 auto;
+    margin: 0 4px 8px auto;
     border: 1px solid #000;
     background: #fff;
     padding: 8px 10px;
@@ -588,10 +601,12 @@
       align-items: flex-end;
     }
 
-    .clipper-hint { margin: 12px 16px 0 auto; }
+    .clipper-hint { margin: 0 16px 8px auto; }
     /* document-relative so it can rest beside the photo at the bottom of the
-       stacked page (a fixed clipper can't follow below-the-fold content) */
-    .clipper-container { position: absolute; top: 190px; }
+       stacked page (a fixed clipper can't follow below-the-fold content);
+       top/left restore the stacked layout's own base spot over the desktop
+       bottom/right one */
+    .clipper-container { position: absolute; top: 190px; bottom: auto; left: calc(50vw - 30px); right: auto; }
 
     /* inline PDF embedding is unreliable on phones/tablets: hide the embed,
        lean on the Open / Download card affordances instead */
@@ -616,14 +631,14 @@
 
   <nav class="nav">
     <ul id="navList" role="tablist" aria-label="Sections">
-      <li class="active" role="tab" tabindex="0" aria-selected="true" aria-controls="contentInner" data-tab="Home" data-slug="home">Home</li>
+      <li class="active" role="tab" tabindex="0" aria-selected="true" aria-controls="contentInner" data-tab="Highlights" data-slug="home">Highlights</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="About Me" data-slug="about">About Me</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Resume" data-slug="resume">Resume</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Lucid Motors" data-slug="lucid-motors">Lucid Motors</li>
-      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="BYU Racing FSAE" data-slug="byu-racing">BYU Racing FSAE</li>
-      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="SO-101" data-slug="so-101">SO-101</li>
-      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="BK Precision MCP" data-slug="bk-psu-mcp">BK Precision MCP</li>
-      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="ElectroPuch" data-slug="electropuch">ElectroPuch</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="BYU Racing" data-slug="byu-racing">BYU Racing</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="SO-101 Robotic Arm" data-slug="so-101">SO-101 Robotic Arm</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Power Supply MCP Server" data-slug="bk-psu-mcp">Power Supply MCP Server</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Retro Moped EV Conversion" data-slug="electropuch">Retro Moped EV Conversion</li>
     </ul>
   </nav>
 
@@ -633,8 +648,8 @@
 
   <aside class="right">
     <div class="name">Landon<br>McNeil</div>
-    <div class="clipper-hint" id="clipperHint">&#8226; drag the clippers onto the hair to shave<br>&#8226; scroll to resize<br>&#8226; circle handle rotates, square resizes</div>
     <div class="photo-area">
+      <div class="clipper-hint" id="clipperHint">&#8226; drag the clippers onto the hair to shave<br>&#8226; scroll to resize<br>&#8226; circle handle rotates, square resizes</div>
       <span class="reset-link" id="resetLink">&#8634; reset</span>
       <div class="photo-wrapper" id="photoWrapper">
         <canvas id="photoCanvas" width="280" height="447"></canvas>
@@ -1328,6 +1343,49 @@
     return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
   }
 
+  /* ── Highlights (landing page) ──
+     Image-heavy best-of shown on the default tab: one block per project — a
+     favorite shot, a one-sentence pitch, and a link to the full page. Reuses
+     the .about__* prose styles and each page's image helper; the heading and
+     the image both link to the project so a click anywhere goes deeper. */
+  function hlBlock(slug, title, mediaHtml, pitchHtml) {
+    return '<h2 class="lucid__section"><a href="#' + esc(slug) + '">' + esc(title) + '</a></h2>'
+      + '<a class="hl__img-link" href="#' + esc(slug) + '" aria-label="' + esc(title) + '">' + mediaHtml + '</a>'
+      + '<p class="about__p">' + pitchHtml + ' ' + aInt(slug, 'Full story →') + '</p>';
+  }
+
+  function buildHighlightsHTML() {
+    var blocks = [];
+
+    blocks.push('<p class="about__intro">Welcome!</p>');
+    blocks.push('<p class="about__p">I’m Landon McNeil — a test engineer who builds things across the electrical/mechanical/software divide. Here’s the short version of my favorite work; click any picture (or the tabs on the left) for the full story.</p>');
+
+    blocks.push(hlBlock('lucid-motors', 'Lucid Motors',
+      lucidImg('tris.jpg', 'The Thermal Runaway Initiation System built at Lucid Motors'),
+      'I’m a Test Engineer on the High Voltage Build &amp; Test team, where I’ve led pack-level thermal runaway propagation testing on 10+ battery packs and design custom test hardware like this Thermal Runaway Initiation System.'));
+
+    blocks.push(hlBlock('so-101', 'SO-101 Robotic Arm',
+      '<div class="lucid__duo">'
+      + so101Img('leader.jpg', 'The SO-101 leader arm', 'Leader')
+      + so101Img('follower.jpg', 'The SO-101 follower arm', 'Follower')
+      + '</div>',
+      'My home AI-robotics project: I built a leader/follower SO-101 arm pair, recorded my own teleoperation dataset, and trained an ACT imitation-learning policy to run it.'));
+
+    blocks.push(hlBlock('byu-racing', 'BYU Racing',
+      byuImg('seniors.jpg', 'BYU Racing seniors with the car'),
+      'I helped found BYU’s first Formula Student EV team and led the High Voltage and Battery teams that took the school’s first all-electric racecar to competition in 2024.'));
+
+    blocks.push(hlBlock('bk-psu-mcp', 'Power Supply MCP Server',
+      '<img class="about__img hl__img--portrait" src="' + esc(BKMCP_IMG + 'demo-poster.jpg') + '" alt="A BK-9103 power supply lighting an LED, controlled by an AI agent" loading="lazy">',
+      'An MCP server I built (with Claude) that lets AI agents connect to and control BK Precision programmable bench power supplies.'));
+
+    blocks.push(hlBlock('electropuch', 'Retro Moped EV Conversion',
+      electroImg('me-on-the-puch.jpg', 'Landon on the finished ElectroPuch'),
+      'I converted my family’s 1978 Puch Maxi moped from its 49cc two-stroke engine to a battery-electric drivetrain — the “ElectroPuch” — and made a 4-minute build video about it.'));
+
+    return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
+  }
+
   /* ── Looping YouTube segment (1:00–1:35) via the IFrame Player API ──
      A plain iframe can't loop a sub-segment, so we drive it with the API: seek
      back to 60s whenever playback passes 95s. Muted is required for autoplay. */
@@ -1461,11 +1519,12 @@
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildBkPsuHTML();
         initByuVideos();
+      } else if (slug === DEFAULT_SLUG) {
+        contentInner.classList.add('resume-view');
+        contentInner.innerHTML = buildHighlightsHTML();
       } else {
         contentInner.classList.remove('resume-view');
-        contentInner.textContent = slug === DEFAULT_SLUG
-          ? '[ Welcome ]'
-          : '[ ' + tab + ' — content coming soon ]';
+        contentInner.textContent = '[ ' + tab + ' — content coming soon ]';
       }
       if (contentInner.parentElement) contentInner.parentElement.scrollTop = 0;
       contentInner.classList.add('fade-in');
