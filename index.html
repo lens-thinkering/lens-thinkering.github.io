@@ -27,14 +27,14 @@
 
   .shell {
     display: grid;
-    grid-template-columns: 180px 1fr 340px;
+    grid-template-columns: 230px 1fr 340px;
     height: 100vh;
   }
 
   /* ── Left nav ── */
   .nav {
     border-right: 1px solid #000;
-    padding: 24px 0 0 24px;
+    padding: 24px 12px 0 24px;
   }
   .nav ul { list-style: none; }
   .nav li {
@@ -42,7 +42,6 @@
     font-weight: 400;
     line-height: 2;
     cursor: pointer;
-    white-space: nowrap;
   }
   .nav li:hover { text-decoration: underline; }
   .nav li.active::before { content: "\2192 "; }
