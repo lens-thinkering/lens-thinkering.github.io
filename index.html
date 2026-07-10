@@ -651,7 +651,8 @@
 
   <nav class="nav">
     <ul id="navList" role="tablist" aria-label="Sections">
-      <li class="active" role="tab" tabindex="0" aria-selected="true" aria-controls="contentInner" data-tab="Highlights" data-slug="home">Highlights</li>
+      <li class="active" role="tab" tabindex="0" aria-selected="true" aria-controls="contentInner" data-tab="Home" data-slug="home">Home</li>
+      <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Highlights" data-slug="highlights">Highlights</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="About Me" data-slug="about">About Me</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Resume" data-slug="resume">Resume</li>
       <li role="tab" tabindex="-1" aria-selected="false" aria-controls="contentInner" data-tab="Lucid Motors" data-slug="lucid-motors">Lucid Motors</li>
@@ -1363,9 +1364,9 @@
     return '<div class="resume"><section class="about">' + blocks.join('') + '</section></div>';
   }
 
-  /* ── Highlights (landing page) ──
-     Image-heavy best-of shown on the default tab: a 2-col grid of cards, one
-     per project — a favorite shot (uniform 4:3 crop), title, and a short
+  /* ── Highlights ──
+     Image-heavy best-of on its own tab (#highlights): a 2-col grid of cards,
+     one per project — a favorite shot (uniform 4:3 crop), title, and a short
      pitch. Reuses each page's image helper; the image and title both link to
      the project so a click anywhere goes deeper. */
   function hlCard(slug, title, imgHtml, pitchHtml) {
@@ -1379,7 +1380,7 @@
   function buildHighlightsHTML() {
     var blocks = [];
 
-    blocks.push('<p class="about__intro">Welcome!</p>');
+    blocks.push('<p class="about__intro">Highlights</p>');
     blocks.push('<p class="about__p">I’m Landon McNeil — a test engineer who builds things across the electrical/mechanical/software divide. Here’s the short version of my favorite work; click any picture (or the tabs on the left) for the full story.</p>');
 
     blocks.push('<div class="hl__grid">'
@@ -1542,9 +1543,12 @@
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildBkPsuHTML();
         initByuVideos();
-      } else if (slug === DEFAULT_SLUG) {
+      } else if (slug === 'highlights') {
         contentInner.classList.add('resume-view');
         contentInner.innerHTML = buildHighlightsHTML();
+      } else if (slug === DEFAULT_SLUG) {
+        contentInner.classList.remove('resume-view');
+        contentInner.textContent = '[ Welcome ]';
       } else {
         contentInner.classList.remove('resume-view');
         contentInner.textContent = '[ ' + tab + ' — content coming soon ]';
